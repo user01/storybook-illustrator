@@ -31,3 +31,31 @@ The second objective of maintaining a consistent visual tone and flow for the st
 [4] Vinyals, Oriol, et al. "Show and tell: A neural image caption generator." Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition. 2015.
 
 [5] Zhu, Yukun, et al. "Aligning books and movies: Towards story-like visual explanations by watching movies and reading books." Proceedings of the IEEE International Conference on Computer Vision. 2015.
+
+## Build Notes
+
+### Jupyter
+
+Modifying the [Jupyter](https://jupyter.org/) installation to produce `.py` and `.html` on Jupyter saves will simplify running and updating of all models. The following instructions are pulled from [Jupyter Notebook Best Practices for Data Science](https://www.svds.com/jupyter-notebook-best-practices-for-data-science/).
+
+First, if the `~/.jupyter/jupyter_notebook_config.py` configuration file does not exist, run `jupyter notebook --generate-config`.
+
+Prepend this python to the configuration file at `~/.jupyter/jupyter_notebook_config.py`.
+
+```python
+c = get_config()
+### If you want to auto-save .html and .py versions of your notebook:
+# modified from: https://github.com/ipython/ipython/issues/8009
+import os
+from subprocess import check_call
+
+def post_save(model, os_path, contents_manager):
+    """post-save hook for converting notebooks to .py scripts"""
+    if model['type'] != 'notebook':
+        return # only do this for notebooks
+    d, fname = os.path.split(os_path)
+    check_call(['jupyter', 'nbconvert', '--to', 'script', fname], cwd=d)
+    check_call(['jupyter', 'nbconvert', '--to', 'html', fname], cwd=d)
+
+c.FileContentsManager.post_save_hook = post_save
+```
