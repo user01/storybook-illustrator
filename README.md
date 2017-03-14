@@ -59,3 +59,22 @@ def post_save(model, os_path, contents_manager):
 
 c.FileContentsManager.post_save_hook = post_save
 ```
+
+### VIST
+
+The [Visual Storytelling Dataset (VIST)](http://visionandlanguage.net/VIST/) needs to be downloaded to the local disk and extracted. The location folder must be stored in a plain text file in the project root called `vist.directory.txt`.
+
+The **VIST_DIRECTORY** needs to have the following structure:
+
+```
+┳━VIST_DIRECTORY/
+┗━┳━dii/
+  ┣━sis/
+  ┣━test/
+  ┗━train/
+```
+
+ * `dii` contains the Description in Isolation JSON
+ * `sis` contains the Story in Sequence JSON
+ * `test` contains the testing images (extracted test_images.tar.gz)
+ * `train` contains the training images (extracted train_split.*.tar.gz)
