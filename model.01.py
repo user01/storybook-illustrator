@@ -12,18 +12,19 @@ import json
 import sys
 import numpy as np
 
-from keras.preprocessing import image
+from __future__ import print_function
+import torch
 
 import matplotlib.pyplot as plt
 get_ipython().magic('matplotlib inline')
 
 
-# In[2]:
+# In[34]:
 
 with open("vist.directory.txt") as file:
-    VIST_DIRECTORY = file.read()
+    VIST_DIRECTORY = file.read().strip()
 
-# print("VIST data directory: {}".format(VIST_DATA_DIRECTORY))
+print("VIST data directory: {}".format(VIST_DIRECTORY))
 if not os.path.isdir(VIST_DIRECTORY):
     raise Exception("VIST Data Directory does not exist.")
 
