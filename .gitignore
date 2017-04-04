@@ -89,4 +89,4 @@ ENV/
 .ropeproject
 
 # Ignore path to local VIST directory
-vist.directory.txt
+data.directory.txt
