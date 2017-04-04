@@ -15,6 +15,9 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 
+torch.manual_seed(451)
+# if opt.cuda:
+#     torch.cuda.manual_seed_all(451)
 
 EPOCHS_TO_TRAIN = 25000
 
