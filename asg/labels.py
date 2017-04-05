@@ -19,47 +19,27 @@ for directory, label in _json_groups:
             _label_data[directory][subset] = json.load(data_file)
 
 
-def _modify_annotation(annotation, label_data, group, subset):
+def _annotation_to_dict(label_data, subset, group):
     """
     Reduce an annotation to only the relevant data
     """
-    album = list(filter(lambda a: a["id"] == annotation[
-                 'album_id'], label_data[group][subset]['albums']))[0]
-    return {
-        'album_id': annotation['album_id'],
-        'album_title': album['title'],
-        'album_description': album['description'],
-        'original_text': annotation['original_text'],
-        'text': annotation['text'],
-        'photo_order_in_story': annotation['photo_order_in_story']
-    }
+    annotations_ids = [a[0]["photo_flickr_id"] for a in label_data[group][subset]['annotations']]
+    annotations_texts = [a[0]["text"] for a in label_data[group][subset]['annotations']]
+    return dict(zip(annotations_ids, annotations_texts))
 
 
-def _annotations(label_data, group, subset):
+def _annotations(label_data, subset):
     """
     Gather annotation into dictionary
 
-    key - int - value that matches [image filename].jpg
-    value - dictionary of annotation data. Of form:
-    {
-    'album_id': '481598',
-    'original_text': 'a shiny black car resting on the pavement in front of a crowd of people',
-    'photo_flickr_id': '20643962',
-    'photo_order_in_story': 4,
-    'text': 'a shiny black car resting on the pavement in front of a crowd of people',
-    'tier': 'descriptions-in-isolation',
-    'worker_id': 'K9458ZXUSNHEL4D'
-    }
+    key - string - value that matches [image filename].jpg
+    value - string of santanized text description
     """
-    annotations_single = map(lambda a: a[0], label_data[
-                             group][subset]['annotations'])
-    # annotations = map(lambda a: _modify_annotation(a, label_data, group, subset), annotations_single)
-    annotation_ids = map(lambda a: int(
-        a['photo_flickr_id']), annotations_single)
 
-    return dict(zip(annotation_ids, annotations_single))
-    # return dict(zip(annotation_ids, annotations))
+    annotations_dii = _annotation_to_dict(label_data, subset, "dii")
+    annotations_sis = _annotation_to_dict(label_data, subset, "sis")
+    return {**annotations_sis, **annotations_sis}
 
 
-annotations_train = _annotations(_label_data, 'dii', 'train')
-annotations_test = _annotations(_label_data, 'dii', 'test')
+annotations_train = _annotations(_label_data, 'train')
+annotations_test = _annotations(_label_data, 'test')
