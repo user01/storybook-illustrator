@@ -1,8 +1,8 @@
 import os
 
 with open("data.directory.txt") as f:
-    DATA_DIRECTORY = f.read().strip()
+    data_directory = f.read().strip()
 
-if not os.path.isdir(DATA_DIRECTORY):
+if not os.path.isdir(data_directory):
     raise Exception(
-        "Data directory: {} does not exist.".format(DATA_DIRECTORY))
+        "Data directory: {} does not exist.".format(data_directory))
