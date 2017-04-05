@@ -2,7 +2,7 @@
 import os
 import json
 
-from .datadirectory import DATA_DIRECTORY
+from .datadirectory import data_directory
 
 
 _json_subsets = ['test', 'train', 'val']
@@ -13,7 +13,7 @@ _label_data = {}
 for directory, label in _json_groups:
     _label_data[directory] = {}
     for subset in _json_subsets:
-        path = os.path.join(DATA_DIRECTORY, directory,
+        path = os.path.join(data_directory, directory,
                             '{}.{}.json'.format(subset, label))
         with open(path) as data_file:
             _label_data[directory][subset] = json.load(data_file)
