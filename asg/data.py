@@ -21,7 +21,7 @@ import torchvision.models as models
 
 from .datadirectory import data_directory
 from .labels import annotations_train
-from .word2vec import word_mover_distance
+from .word2vec import word_mover_distance, sentence_embedding
 
 _normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                   std=[0.229, 0.224, 0.225])
@@ -101,18 +101,18 @@ class DataLoader:
         raise StopIteration()
 
     def _current_image(self):
+        actual_text = self._texts[self._idx]
         # one of the passes, return the correct with no distance
         if (self._idx + self._mismatched_passes) % self._mismatched_passes == 0:
-            return (self._images[self._idx], self._texts[self._idx], 0)
+            return (self._images[self._idx], sentence_embedding(actual_text), 0)
 
         # mismatch the text
         possible_texts = [
-            text for text in self._valid_texts if text != self._texts[self._idx]]
+            text for text in self._valid_texts if text != actual_text]
         random.seed(self._idx + self._mismatched_passes)
         new_text = random.choice(possible_texts)
-        distance = word_mover_distance(
-            self._texts[self._idx], new_text)
-        return (self._images[self._idx], self._texts[self._idx], distance)
+        distance = word_mover_distance(actual_text, new_text)
+        return (self._images[self._idx], sentence_embedding(new_text), distance)
 
 
 data_train = DataLoader(_image_folder, _text_values)
