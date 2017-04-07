@@ -1,4 +1,5 @@
 import os
+import re
 
 import numpy as np
 from gensim.models import Word2Vec
@@ -40,14 +41,18 @@ def similarity(word_01, word_02):
         return 1
 
 
+_punct_regexp = re.compile(r"^\W+$", re.IGNORECASE)
+
+
 def tokenize(text):
     """Reduce a string to non-stopword tokens"""
-    return [word for word in _tokenizer.tokenize(text.lower()) if word not in _stopset]
+    return [word for word in _tokenizer.tokenize(text.lower())
+            if word not in _stopset and _punct_regexp.match(word) is None]
 
 
 def sentence_embedding(text):
     """Convert a sentence to text embedding"""
-    return [vec(word) for word in _tokenizer.tokenize(text)]
+    return [vec(word) for word in tokenize(text)]
 
 
 def _find_min_distance(word_source, tokens_target):
