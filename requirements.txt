@@ -1,0 +1,4 @@
+gensim==1.0.1
+numpy==1.12.0
+torch==0.1.10+ac9245a
+torchvision==0.1.7
