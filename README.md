@@ -73,11 +73,12 @@ DATA_DIRECTORY/
 ┣━━GoogleNews-vectors-negative300.bin
 ┗━┳━dii/
   ┣━sis/
-  ┣━test/
-  ┗━train/
+  ┗━images┳━train_split.0
+          ┣━train_split.1
+          ┣━...
+          ┗━train_split.12
 ```
 
  * `dii` contains the Description in Isolation JSON
  * `sis` contains the Story in Sequence JSON
- * `test` contains the testing images (extracted test_images.tar.gz)
- * `train` contains the training images (extracted train_split.*.tar.gz)
+ * `images` contains the training images (extracted train_split.*.tar.gz)
