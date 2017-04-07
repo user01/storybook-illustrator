@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 from gensim.models import Word2Vec
 from gensim import models
 from nltk.tokenize import word_tokenize
@@ -21,12 +22,22 @@ _embedding_model = models.KeyedVectors.load_word2vec_format(
 
 def vec(word):
     """The vector of a word"""
-    return _embedding_model.word_vec(word)
+    try:
+        return _embedding_model.word_vec(word)
+    except KeyError:
+        # word not found
+        # TODO: Handle this invalid word properly
+        return np.zeros((300,), dtype=np.float32)
 
 
 def similarity(word_01, word_02):
     """Similarity between two words"""
-    return _embedding_model.similarity(word_01, word_02)
+    try:
+        return _embedding_model.similarity(word_01, word_02)
+    except KeyError:
+        # a word not found
+        # TODO: Handle this invalid word properly
+        return 1
 
 
 def tokenize(text):
