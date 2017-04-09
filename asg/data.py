@@ -102,9 +102,10 @@ class DataLoader:
 
     def _current_image(self):
         actual_text = self._texts[self._idx]
+        image, _ = self._images[self._idx]
         # one of the passes, return the correct with no distance
         if (self._idx + self._mismatched_passes) % self._mismatched_passes == 0:
-            return (self._images[self._idx], sentence_embedding(actual_text), 0)
+            return (image, sentence_embedding(actual_text), 0)
 
         # mismatch the text
         possible_texts = [
@@ -112,7 +113,7 @@ class DataLoader:
         random.seed(self._idx + self._mismatched_passes)
         new_text = random.choice(possible_texts)
         distance = word_mover_distance(actual_text, new_text)
-        return (self._images[self._idx], sentence_embedding(new_text), distance)
+        return (image, sentence_embedding(new_text), distance)
 
 
 data_train = DataLoader(_image_folder, _text_values)
