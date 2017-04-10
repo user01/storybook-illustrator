@@ -102,7 +102,11 @@ class DataLoader:
 
     def _current_image(self):
         actual_text = self._texts[self._idx]
-        image, _ = self._images[self._idx]
+        image_raw, _ = self._images[self._idx]
+
+        # resnet requires this shape of [1, 3, 224, 224]
+        image = torch.unsqueeze(image_raw, 0)
+
         # one of the passes, return the correct with no distance
         if (self._idx + self._mismatched_passes) % self._mismatched_passes == 0:
             return (image, sentence_embedding(actual_text), 0)
