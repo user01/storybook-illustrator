@@ -1,23 +1,13 @@
-import torch
-import math
+"""Utilities to load a custom version of the VIST dataset"""
+
+
 import os
 import re
-import time
 import random
 
-
-import numpy as np
-
-from torch.autograd import Variable
-from torch.utils.data import TensorDataset
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import torch.optim
-import torch.utils.data
+import torch
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-import torchvision.models as models
 
 from .datadirectory import data_directory
 from .labels import annotations_train
@@ -36,7 +26,7 @@ _image_folder = datasets.ImageFolder(
     ]))
 
 
-_id_regexp = re.compile('^(.+)\.\D+$', re.IGNORECASE)
+_id_regexp = re.compile(r'^(.+)\.\D+$', re.IGNORECASE)
 
 
 def _path_leaf(path):
@@ -66,6 +56,18 @@ _text_values = [_img_path_to_text(path)
                 for path, _ in _image_folder.imgs]
 
 
+def _vector_to_tensor(vec):
+    return torch.unsqueeze(torch.from_numpy(vec), 0)
+
+
+def _vectors_to_tensor(vectors):
+    return torch.stack(list(map(_vector_to_tensor, vectors)))
+
+
+def _sentence_to_tensor(sentence):
+    return _vectors_to_tensor(sentence_embedding(sentence))
+
+
 class DataLoader:
     """
     Iterator to step though image/text pairs with associated distance
@@ -84,6 +86,7 @@ class DataLoader:
         self._valid_texts = [text for text in texts if text != False]
         self._pass = 0
         self._mismatched_passes = mismatched_passes
+        self._seed = seed
 
     def __iter__(self):
         return self
@@ -101,18 +104,23 @@ class DataLoader:
         raise StopIteration()
 
     def _current_image(self):
-        actual_text = self._texts[self._idx]
+        text_actual = self._texts[self._idx]
+        image_raw, _ = self._images[self._idx]
+
+        # resnet requires this shape of [1, 3, 224, 224]
+        image = torch.unsqueeze(image_raw, 0)
+
         # one of the passes, return the correct with no distance
         if (self._idx + self._mismatched_passes) % self._mismatched_passes == 0:
-            return (self._images[self._idx], sentence_embedding(actual_text), 0)
+            return (image, _sentence_to_tensor(text_actual), 0)
 
         # mismatch the text
         possible_texts = [
-            text for text in self._valid_texts if text != actual_text]
-        random.seed(self._idx + self._mismatched_passes)
+            text for text in self._valid_texts if text != text_actual]
+        random.seed(self._idx + self._mismatched_passes + self._seed)
         new_text = random.choice(possible_texts)
-        distance = word_mover_distance(actual_text, new_text)
-        return (self._images[self._idx], sentence_embedding(new_text), distance)
+        distance = word_mover_distance(text_actual, new_text)
+        return (image, _sentence_to_tensor(new_text), distance)
 
 
 data_train = DataLoader(_image_folder, _text_values)
