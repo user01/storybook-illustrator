@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Second version of Storyboard Model generation"""
 
 
@@ -36,6 +37,7 @@ class Net(nn.Module):
 
     @staticmethod
     def cosine_distance(tensor_1, tensor_2):
+        """Measure cosine distance of tensor variables"""
         numerator = tensor_1.mul(tensor_2).sum()
 
         denominator_1 = tensor_1.pow(2).sum().pow(0.5)
@@ -57,13 +59,15 @@ optimizer = optim.SGD(net.parameters(), lr=0.01)
 print("Training loop:")
 for epoch in range(EPOCHS_TO_TRAIN):
     for idx, (image, text, distance) in enumerate(data_train):
-        print("Index: {}".format(idx))
+        print("Epoch: {: >6} | Index: {: >6}".format(epoch, idx))
         optimizer.zero_grad()   # zero the gradient buffers
         output = net(Variable(image), Variable(text))
         loss = criterion(output, Variable(
             torch.FloatTensor([distance])))
         loss.backward()
         optimizer.step()    # Does the update
+        if idx > 5:
+            break
     if epoch % 1 == 0:
         print("Epoch {: >8} Loss: {}".format(
-            idx, loss.data.numpy()[0]))
+            epoch, loss.data.numpy()[0]))
