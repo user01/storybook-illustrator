@@ -15,23 +15,27 @@ cuda_available = torch.cuda.is_available()
 torch.manual_seed(451)
 if cuda_available:
     torch.cuda.manual_seed_all(451)
-#     dtype = torch.cuda.FloatTensor
-# else:
-#     dtype = torch.FloatTensor
+
+def variable(target):
+    """Convert tensor to a variable"""
+    if cuda_available:
+        target = target.cuda()
+    return Variable(target)
 
 EPOCHS_TO_TRAIN = 1
 
 
 class Net(nn.Module):
     """Image and Text module"""
-    _number_one = Variable(torch.FloatTensor([1]).cuda())
+    _number_one = variable(torch.FloatTensor([1]))
 
     def __init__(self):
         super(Net, self).__init__()
-        self._cnn = models.resnet18(pretrained=True).cuda()
-        self._cnn.fc = nn.Linear(512, 300, True).cuda()
 
-        self._model_lstm = nn.LSTM(300, 300, 2).cuda()
+        self._cnn = models.resnet18(pretrained=True)
+        self._cnn.fc = nn.Linear(512, 300, True)
+
+        self._model_lstm = nn.LSTM(300, 300, 2)
 
     def forward(self, image_var, text_var):
         output_image_var = self._cnn(image_var)
@@ -59,9 +63,8 @@ class Net(nn.Module):
 
 net = Net()
 
-net._cnn.cuda()
-
-net._cnn(image)
+if cuda_available:
+    net = net.cuda()
 
 criterion = nn.MSELoss()
 optimizer = optim.SGD(net.parameters(), lr=0.01)
@@ -75,10 +78,10 @@ for epoch in range(EPOCHS_TO_TRAIN):
     for idx, (image, text, distance) in enumerate(data_train):
         print("Epoch: {: >6} | Index: {: >6} | Complete {:.2%}".format(epoch, idx, idx / total_per_epoch))
         optimizer.zero_grad()   # zero the gradient buffers
-        image = Variable(image.cuda())
-        text = Variable(text.cuda())
+        image = variable(image)
+        text = variable(text)
         output = net(image, text)
-        target = Variable(torch.FloatTensor([distance]).cuda())
+        target = variable(torch.FloatTensor([distance]))
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()    # Does the update
