@@ -10,23 +10,32 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
 from .datadirectory import data_directory
-from .labels import annotations_train
+from .labels import annotations_train, annotations_test
 from .word2vec import word_mover_distance, sentence_embedding, tokenize
 
-_normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+_NORMALIZE = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                   std=[0.229, 0.224, 0.225])
 
-_image_folder = datasets.ImageFolder(
-    os.path.join(data_directory, 'images'),
-    transforms.Compose([
-        transforms.RandomSizedCrop(224),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        _normalize
-    ]))
+
+def _image_folder(path):
+    """Image folder from a path"""
+    return datasets.ImageFolder(
+        path,
+        transforms.Compose([
+            transforms.RandomSizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            _NORMALIZE
+        ]))
 
 
-_id_regexp = re.compile(r'^(.+)\.\D+$', re.IGNORECASE)
+_IMAGE_FOLDER_TRAIN = _image_folder(
+    os.path.join(data_directory, 'train', 'images'))
+_IMAGE_FOLDER_TEST = _image_folder(
+    os.path.join(data_directory, 'test', 'images'))
+
+
+_REGEXP_ID = re.compile(r'^(.+)\.\D+$', re.IGNORECASE)
 
 
 def _path_leaf(path):
@@ -39,9 +48,9 @@ def _path_leaf(path):
     return tail or os.path.basename(head)
 
 
-def _img_path_to_text(path):
+def _img_path_to_text(path, annotations):
     filename = _path_leaf(path)
-    results = _id_regexp.match(filename)
+    results = _REGEXP_ID.match(filename)
     if results is None:
         return False
 
@@ -49,11 +58,13 @@ def _img_path_to_text(path):
     if len(groups) != 1:
         return False
 
-    return annotations_train[groups[0]] if groups[0] in annotations_train else False
+    return annotations[groups[0]] if groups[0] in annotations else False
 
 
-_text_values = [_img_path_to_text(path)
-                for path, _ in _image_folder.imgs]
+_TEXT_VALUES_TRAIN = [_img_path_to_text(path, annotations_train)
+                      for path, _ in _IMAGE_FOLDER_TRAIN.imgs]
+_TEXT_VALUES_TEST = [_img_path_to_text(path, annotations_test)
+                     for path, _ in _IMAGE_FOLDER_TEST.imgs]
 
 
 def _vector_to_tensor(vec):
@@ -83,7 +94,8 @@ class DataLoader:
         self._idx = -1
         self._images = images
         self._texts = texts
-        self._valid_texts = [text for text in texts if DataLoader._valid_text(text)]
+        self._valid_texts = [
+            text for text in texts if DataLoader._valid_text(text)]
         self._pass = 0
         self._mismatched_passes = mismatched_passes
         self._seed = seed
@@ -133,4 +145,5 @@ class DataLoader:
         return (image, _sentence_to_tensor(new_text), distance)
 
 
-data_train = DataLoader(_image_folder, _text_values)
+data_train = DataLoader(_IMAGE_FOLDER_TRAIN, _TEXT_VALUES_TRAIN, 3, 451)
+data_test = DataLoader(_IMAGE_FOLDER_TEST, _TEXT_VALUES_TEST, 3, 452)
