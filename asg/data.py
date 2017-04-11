@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Utilities to load a custom version of the VIST dataset"""
 
 
