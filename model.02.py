@@ -10,20 +10,28 @@ import torchvision.models as models
 
 from asg.data import data_train
 
-torch.manual_seed(451)
+cuda_available = torch.cuda.is_available()
 
-EPOCHS_TO_TRAIN = 2
+torch.manual_seed(451)
+if cuda_available:
+    torch.cuda.manual_seed_all(451)
+#     dtype = torch.cuda.FloatTensor
+# else:
+#     dtype = torch.FloatTensor
+
+EPOCHS_TO_TRAIN = 1
 
 
 class Net(nn.Module):
     """Image and Text module"""
+    _number_one = Variable(torch.FloatTensor([1]).cuda())
 
     def __init__(self):
         super(Net, self).__init__()
-        self._cnn = models.resnet18(pretrained=True)
-        self._cnn.fc = nn.Linear(512, 300, True)
+        self._cnn = models.resnet18(pretrained=True).cuda()
+        self._cnn.fc = nn.Linear(512, 300, True).cuda()
 
-        self._model_lstm = nn.LSTM(300, 300, 2)
+        self._model_lstm = nn.LSTM(300, 300, 2).cuda()
 
     def forward(self, image_var, text_var):
         output_image_var = self._cnn(image_var)
@@ -45,29 +53,35 @@ class Net(nn.Module):
         denominator = denominator_1.mul(denominator_2)
 
         div_result = numerator.div(denominator)
-        result = Variable(torch.FloatTensor([1])).sub(div_result)
+        result = Net._number_one.sub(div_result)
 
         return result
 
 net = Net()
 
+net._cnn.cuda()
+
+net._cnn(image)
 
 criterion = nn.MSELoss()
 optimizer = optim.SGD(net.parameters(), lr=0.01)
 
 
 print("Training loop:")
+total_per_epoch = len(data_train)
+net.train()
+
 for epoch in range(EPOCHS_TO_TRAIN):
     for idx, (image, text, distance) in enumerate(data_train):
-        print("Epoch: {: >6} | Index: {: >6}".format(epoch, idx))
+        print("Epoch: {: >6} | Index: {: >6} | Complete {:.2%}".format(epoch, idx, idx / total_per_epoch))
         optimizer.zero_grad()   # zero the gradient buffers
-        output = net(Variable(image), Variable(text))
-        loss = criterion(output, Variable(
-            torch.FloatTensor([distance])))
+        image = Variable(image.cuda())
+        text = Variable(text.cuda())
+        output = net(image, text)
+        target = Variable(torch.FloatTensor([distance]).cuda())
+        loss = criterion(output, target)
         loss.backward()
         optimizer.step()    # Does the update
-        if idx > 5:
-            break
     if epoch % 1 == 0:
         print("Epoch {: >8} Loss: {}".format(
             epoch, loss.data.numpy()[0]))
