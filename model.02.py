@@ -76,7 +76,6 @@ net.train()
 
 for epoch in range(EPOCHS_TO_TRAIN):
     for idx, (image, text, distance) in enumerate(data_train):
-        print("Epoch: {: >6} | Index: {: >6} | Complete {:.2%}".format(epoch, idx, idx / total_per_epoch))
         optimizer.zero_grad()   # zero the gradient buffers
         image = variable(image)
         text = variable(text)
@@ -85,6 +84,8 @@ for epoch in range(EPOCHS_TO_TRAIN):
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()    # Does the update
+        if idx % (total_per_epoch // 25) == 0:
+            print("Epoch: {: >6} | Index: {: >6} | Complete {: >7.2%} | Loss {:.8f}".format(epoch, idx, idx / total_per_epoch, loss.data.cpu().numpy()[0]))
     if epoch % 1 == 0:
         print("Epoch {: >8} Loss: {}".format(
-            epoch, loss.data.numpy()[0]))
+            epoch, loss.data.cpu().numpy()[0]))
