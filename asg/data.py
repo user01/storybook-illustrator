@@ -91,6 +91,9 @@ class DataLoader:
     def __iter__(self):
         return self
 
+    def __len__(self):
+        return len(self._valid_texts)
+
     def __next__(self):
 
         while self._pass < self._mismatched_passes:
