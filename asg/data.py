@@ -11,7 +11,7 @@ import torchvision.datasets as datasets
 
 from .datadirectory import data_directory
 from .labels import annotations_train
-from .word2vec import word_mover_distance, sentence_embedding
+from .word2vec import word_mover_distance, sentence_embedding, tokenize
 
 _normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                   std=[0.229, 0.224, 0.225])
@@ -83,23 +83,30 @@ class DataLoader:
         self._idx = -1
         self._images = images
         self._texts = texts
-        self._valid_texts = [text for text in texts if text != False]
+        self._valid_texts = [text for text in texts if DataLoader._valid_text(text)]
         self._pass = 0
         self._mismatched_passes = mismatched_passes
         self._seed = seed
+
+    @staticmethod
+    def _valid_text(text):
+        if text == False:
+            return False
+        tokens = len(tokenize(text))
+        return tokens > 1 and tokens < 20
 
     def __iter__(self):
         return self
 
     def __len__(self):
-        return len(self._valid_texts)
+        return len(self._valid_texts) * self._mismatched_passes
 
     def __next__(self):
 
         while self._pass < self._mismatched_passes:
             while self._idx < len(self._texts) - 1:
                 self._idx += 1
-                if self._texts[self._idx] != False:
+                if DataLoader._valid_text(self._texts[self._idx]):
                     return self._current_image()
             self._pass += 1
             self._idx = -1
