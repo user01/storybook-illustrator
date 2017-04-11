@@ -60,6 +60,10 @@ def post_save(model, os_path, contents_manager):
 c.FileContentsManager.post_save_hook = post_save
 ```
 
+### Dependencies
+
+Python dependencies are in the pip3 file `requirements.txt`. Note that nltk requires data files, which are loaded by `python -m nltk.downloader all`. Pytorch will automatically retrieve resnet preloadings on the first run.
+
 ### Data
 
 The [Visual Storytelling Dataset (VIST)](http://visionandlanguage.net/VIST/) needs to be downloaded to the local disk and extracted. The location folder must be stored in a plain text file in the project root called `data.directory.txt`.
