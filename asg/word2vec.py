@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+"""Word2Vec Utilities"""
+
 import os
 import re
 

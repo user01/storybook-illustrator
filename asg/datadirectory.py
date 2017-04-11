@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+"""Read the local data.directory.txt to point to local VIST dataset"""
+
 import os
 
 with open("data.directory.txt") as f:
