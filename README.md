@@ -77,12 +77,19 @@ DATA_DIRECTORY/
 ┣━━GoogleNews-vectors-negative300.bin
 ┗━┳━dii/
   ┣━sis/
-  ┗━images┳━train_split.0
-          ┣━train_split.1
-          ┣━...
-          ┗━train_split.12
+  ┣━train━images━images┳━image.0.jpg
+  ┃                    ┣━image.1.jpg
+  ┃                    ┣━...
+  ┃                    ┗━image.12.jpg
+  ┗━test━━images━test━━┳━image.0.jpg
+                       ┣━image.1.jpg
+                       ┣━...
+                       ┗━image.12.jpg
 ```
 
  * `dii` contains the Description in Isolation JSON
  * `sis` contains the Story in Sequence JSON
- * `images` contains the training images (extracted train_split.*.tar.gz)
+ * `train` contains the training images, in two subfolders (extracted train_split.*.tar.gz)
+ * `test` contains the testing images, in two subfolders (extracted test_split.tar.gz)
+
+The deep folder structure is an artifact of how pytorch's Image Folder considers the assets.
