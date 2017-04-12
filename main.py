@@ -19,6 +19,8 @@ parser.add_argument('--learningrate', type=float,
                     default=0.01, help='Learning Rate. Default=0.01')
 parser.add_argument('--seed', type=int, default=451,
                     help='Random seed. Default=451')
+parser.add_argument('--report', type=int, default=200,
+                    help='Rate of reporting images. Default=200')
 opt = parser.parse_args()
 # opt = parser.parse_args(([
 #     '--epochs',
@@ -62,6 +64,7 @@ def variable(target):
         target = target.cuda()
     return Variable(target)
 
+
 def train(epoch):
     epoch_loss = 0
     net.train()
@@ -80,10 +83,11 @@ def train(epoch):
         loss.backward()
         optimizer.step()
 
-        Logger.log("Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch,
-                                                           idx,
-                                                           len(loader.data_train),
-                                                           loss.data[0]))
+        if idx % opt.report == 0:
+            Logger.log("Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch,
+                                                               idx,
+                                                               len(loader.data_train),
+                                                               loss.data[0]))
 
     Logger.log("Epoch {} Complete: Avg. Loss: {:.4f}".format(
         epoch, epoch_loss / len(loader.data_train)))
@@ -101,7 +105,12 @@ def test():
         loss = criterion(prediction, target)
         epoch_loss += loss.data[0]
 
-    Logger.log("Avg. Test Loss: {:.4f}".format(epoch_loss / len(loader.data_test)))
+        if idx % opt.report == 0:
+            Logger.log("Current Avg. Test Loss: {:.4f}".format(
+                epoch_loss / idx))
+
+    Logger.log("Avg. Test Loss: {:.4f}".format(
+        epoch_loss / len(loader.data_test)))
 
 
 def checkpoint(epoch):
