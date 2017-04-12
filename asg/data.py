@@ -12,7 +12,6 @@ import torchvision.datasets as datasets
 
 from .datadirectory import data_directory
 from .labels import Annotations
-# from .word2vec import word_mover_distance, sentence_embedding, tokenize
 
 
 class Loader(object):
