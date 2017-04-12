@@ -1,4 +1,5 @@
 
+import os
 import argparse
 import torch
 import torch.nn as nn
@@ -107,14 +108,16 @@ def test():
 
         if idx % opt.report == 0:
             Logger.log("Current Avg. Test Loss: {:.4f}".format(
-                epoch_loss / idx))
+                epoch_loss / (idx + 1)))
+        if idx > 10 * opt.report:
+            break # large testing currently not useful
 
     Logger.log("Avg. Test Loss: {:.4f}".format(
         epoch_loss / len(loader.data_test)))
 
 
 def checkpoint(epoch):
-    model_out_path = "model_epoch_{}.pth".format(epoch)
+    model_out_path = os.path.join("models", "model_epoch_{}.pth".format(epoch))
     torch.save(net, model_out_path)
     Logger.log("Checkpoint saved to {}".format(model_out_path))
 
