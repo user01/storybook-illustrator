@@ -90,3 +90,6 @@ ENV/
 
 # Ignore path to local VIST directory
 data.directory.txt
+
+# Ignore generated model checkpoints
+models/*.pth
