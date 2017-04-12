@@ -2,25 +2,13 @@
 """Storyboard Model"""
 
 
-import torch
 import torch.nn as nn
-import torch.autograd as autograd
 import torchvision.models as models
-
-CUDA_AVAILABLE = torch.cuda.is_available()
-
-class Variable(autograd.Variable):
-    """Variable that makes use of GPU if available"""
-
-    def __init__(self, data, *args, **kwargs):
-        if CUDA_AVAILABLE:
-            data = data.cuda()
-        super(Variable, self).__init__(data, *args, **kwargs)
 
 
 class Net(nn.Module):
     """Image and Text module"""
-    _number_one = Variable(torch.FloatTensor([1]))
+    number_one = None
 
     def __init__(self):
         super(Net, self).__init__()
@@ -30,21 +18,17 @@ class Net(nn.Module):
 
         self._model_lstm = nn.LSTM(300, 300, 2)
 
-    def forward(self, image, text):
+    def forward(self, image_var, text_var):
         """Overridden forward method"""
-        image_var = Variable(image)
-        text_var = Variable(text)
-
         output_image_var = self._cnn(image_var)
         output_text_seq, _ = self._model_lstm(text_var)
 
         output_text_var = output_text_seq[-1]
-        output_distance = Net.cosine_distance(output_image_var, output_text_var)
+        output_distance = self.cosine_distance(output_image_var, output_text_var)
 
         return output_distance
 
-    @staticmethod
-    def cosine_distance(tensor_1, tensor_2):
+    def cosine_distance(self, tensor_1, tensor_2):
         """Measure cosine distance of tensor variables"""
         numerator = tensor_1.mul(tensor_2).sum()
 
@@ -53,6 +37,6 @@ class Net(nn.Module):
         denominator = denominator_1.mul(denominator_2)
 
         div_result = numerator.div(denominator)
-        result = Net._number_one.sub(div_result)
+        result = self.number_one.sub(div_result)
 
         return result
