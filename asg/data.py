@@ -21,10 +21,10 @@ class DataLoader(object):
 
     Each iteration returns a tuple of (torch_image, text, distance)
 
-    image is of form: `batch_size*color*width*hieght`
+    image is of form: `batch_size*color*width*height`
 
     text is of form: `time_step_size*batch_size*hidden_size`
-    
+
     distance is of form: `batch_size*1`
 
     This generates mismatched image/text pairs with the correct distance.
@@ -49,8 +49,8 @@ class DataLoader(object):
         self._images = DataLoader._image_folder(
             os.path.join(data_directory, group, 'images'))
 
-        annotations = Annotations.annotations_train(
-        ) if group == 'train' else Annotations.annotations_test()
+        annotations = Annotations.annotations_train() if \
+            group == 'train' else Annotations.annotations_test()
         self._texts = [DataLoader._img_path_to_text(path, annotations)
                        for path, _ in self._images.imgs]
 
@@ -155,7 +155,6 @@ class DataLoader(object):
         distance = self._word2vec.word_mover_distance(text_actual, new_text)
         return (image, self._sentence_to_tensor(new_text), distance)
 
-
     def _list_to_batch(self, sets):
         """List of elements to a batch"""
         images = torch.cat([s[0] for s in sets], 0)
@@ -165,6 +164,8 @@ class DataLoader(object):
             self._max_tokens - text.size()[0], 300), 1)]) for text in texts]
         texts_final = torch.squeeze(torch.stack(texts_a, 1))
 
+        texts_positions = [text.size()[0] for text in texts]
+
         distance_set = [s[2] for s in sets]
         distances = torch.FloatTensor(distance_set).unsqueeze(1)
-        return images, texts_final, distances
+        return images, texts_final, texts_positions, distances
