@@ -14,32 +14,48 @@ from .datadirectory import data_directory
 from .labels import Annotations
 
 
-class Loader(object):
-    """Load image data"""
+class DataLoader(object):
+    """
+    Iterator to step though image/text pairs with associated distance, sized
+    by the batch size
 
-    def __init__(self, word2vec):
+    Each iteration returns a tuple of (torch_image, text, distance)
+
+    image is of form: `batch_size*color*width*hieght`
+
+    text is of form: `time_step_size*batch_size*hidden_size`
+    
+    distance is of form: `batch_size*1`
+
+    This generates mismatched image/text pairs with the correct distance.
+    mismatched_passes indicates how many times an image will be mismatched with
+    a different text
+    """
+
+    def __init__(self,
+                 group,
+                 word2vec,
+                 batch_size=10,
+                 mismatched_passes=3,
+                 max_tokens=15,
+                 seed=451):
+        self._idx = -1
+        self._batch_size = batch_size
+        self._max_tokens = max_tokens
         self._word2vec = word2vec
+        self._mismatched_passes = mismatched_passes
+        self._seed = seed
 
-        image_folder_train = Loader._image_folder(
-            os.path.join(data_directory, 'train', 'images'))
-        image_folder_test = Loader._image_folder(
-            os.path.join(data_directory, 'test', 'images'))
+        self._images = DataLoader._image_folder(
+            os.path.join(data_directory, group, 'images'))
 
-        a_train = Annotations.annotations_train()
-        a_test = Annotations.annotations_test()
-        text_values_train = [Loader._img_path_to_text(path, a_train)
-                             for path, _ in image_folder_train.imgs]
-        text_values_test = [Loader._img_path_to_text(path, a_test)
-                            for path, _ in image_folder_test.imgs]
+        annotations = Annotations.annotations_train(
+        ) if group == 'train' else Annotations.annotations_test()
+        self._texts = [DataLoader._img_path_to_text(path, annotations)
+                       for path, _ in self._images.imgs]
 
-        self.data_train = DataLoader(
-            image_folder_train, text_values_train,
-            word2vec, self._sentence_to_tensor,
-            3, 451)
-        self.data_test = DataLoader(
-            image_folder_test, text_values_test,
-            word2vec, self._sentence_to_tensor,
-            3, 452)
+        self._valid_texts = [
+            text for text in self._texts if self._valid_text(text)]
 
     _NORMALIZE = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                       std=[0.229, 0.224, 0.225])
@@ -54,7 +70,7 @@ class Loader(object):
                 transforms.RandomSizedCrop(224),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
-                Loader._NORMALIZE
+                DataLoader._NORMALIZE
             ]))
 
     @staticmethod
@@ -69,8 +85,8 @@ class Loader(object):
 
     @staticmethod
     def _img_path_to_text(path, annotations):
-        filename = Loader._path_leaf(path)
-        results = Loader._REGEXP_ID.match(filename)
+        filename = DataLoader._path_leaf(path)
+        results = DataLoader._REGEXP_ID.match(filename)
         if results is None:
             return False
 
@@ -86,77 +102,49 @@ class Loader(object):
 
     @staticmethod
     def _vectors_to_tensor(vectors):
-        return torch.stack(list(map(Loader._vector_to_tensor, vectors)))
+        return torch.stack(list(map(DataLoader._vector_to_tensor, vectors)))
 
     def _sentence_to_tensor(self, sentence):
-        return Loader._vectors_to_tensor(self._word2vec.sentence_embedding(sentence))
-
-    def train(self):
-        """Return the training data DataLoader"""
-        return self.data_train
-
-    def test(self):
-        """Return the testing data DataLoader"""
-        return self.data_test
-
-
-class DataLoader(object):
-    """
-    Iterator to step though image/text pairs with associated distance
-
-    Each iteration returns a tuple of (torch_image, text, distance)
-
-    This generates mismatched image/text pairs with the correct distance.
-    mismatched_passes indicates how many times an image will be mismatched with
-    a different text
-    """
-
-    def __init__(self, images, texts, word2vec, sentence_to_tensor, mismatched_passes=3, seed=451):
-        self._idx = -1
-        self._images = images
-        self._texts = texts
-        self._word2vec = word2vec
-        self._sentence_to_tensor = sentence_to_tensor
-
-        self._valid_texts = [
-            text for text in texts if self._valid_text(text)]
-        self._pass = 0
-        self._mismatched_passes = mismatched_passes
-        self._seed = seed
+        return DataLoader._vectors_to_tensor(self._word2vec.sentence_embedding(sentence))
 
     def _valid_text(self, text):
         if text is False:
             return False
         tokens = len(self._word2vec.tokenize(text))
-        return tokens > 1 and tokens < 20
+        return tokens > 1 and tokens < self._max_tokens
+
+    def _actual_length(self):
+        """Actual number of image/text pairs"""
+        return len(self._valid_texts) * self._mismatched_passes
 
     def __iter__(self):
         return self
 
     def __len__(self):
-        return len(self._valid_texts) * self._mismatched_passes
+        """Number of batches"""
+        return self._actual_length() // self._batch_size + 1
 
     def __next__(self):
-
-        while self._pass < self._mismatched_passes:
-            while self._idx < len(self._texts) - 1:
-                self._idx += 1
-                if self._valid_text(self._texts[self._idx]):
-                    return self._current_image()
-            self._pass += 1
-            self._idx = -1
+        sets = []
+        while self._idx < self._actual_length() - 1:
+            self._idx += 1
+            current_idx = self._idx % len(self._valid_texts)
+            if self._valid_text(self._texts[current_idx]):
+                sets.append(self._current_image(current_idx))
+                if len(sets) == self._batch_size:
+                    return self._list_to_batch(sets)
 
         raise StopIteration()
 
-    def _current_image(self):
-        text_actual = self._texts[self._idx]
-        image_raw, _ = self._images[self._idx]
+    def _current_image(self, current_idx):
+        text_actual = self._texts[current_idx]
+        image_raw, _ = self._images[current_idx]
 
         # resnet requires this shape of [1, 3, 224, 224]
         image = torch.unsqueeze(image_raw, 0)
 
-        # one of the passes, return the correct with no distance
-        if (self._idx + self._mismatched_passes) % self._mismatched_passes == 0:
+        # one of the passes (0th), return the correct text with no distance
+        if (self._idx // len(self._valid_texts)) == 0:
             return (image, self._sentence_to_tensor(text_actual), 0)
 
         # mismatch the text
@@ -166,3 +154,17 @@ class DataLoader(object):
         new_text = random.choice(possible_texts)
         distance = self._word2vec.word_mover_distance(text_actual, new_text)
         return (image, self._sentence_to_tensor(new_text), distance)
+
+
+    def _list_to_batch(self, sets):
+        """List of elements to a batch"""
+        images = torch.cat([s[0] for s in sets], 0)
+
+        texts = [s[1] for s in sets]
+        texts_a = [torch.cat([text, torch.unsqueeze(torch.zeros(
+            self._max_tokens - text.size()[0], 300), 1)]) for text in texts]
+        texts_final = torch.squeeze(torch.stack(texts_a, 1))
+
+        distance_set = [s[2] for s in sets]
+        distances = torch.FloatTensor(distance_set).unsqueeze(1)
+        return images, texts_final, distances

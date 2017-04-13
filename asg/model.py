@@ -30,13 +30,17 @@ class Net(nn.Module):
 
     def cosine_distance(self, tensor_1, tensor_2):
         """Measure cosine distance of tensor variables"""
-        numerator = tensor_1.mul(tensor_2).sum()
+        numerator = tensor_1.mul(tensor_2).sum(1)
 
-        denominator_1 = tensor_1.pow(2).sum().pow(0.5)
-        denominator_2 = tensor_2.pow(2).sum().pow(0.5)
+        denominator_1 = Net._cosine_denominator(tensor_1)
+        denominator_2 = Net._cosine_denominator(tensor_2)
         denominator = denominator_1.mul(denominator_2)
 
         div_result = numerator.div(denominator)
         result = self.number_one.sub(div_result)
 
         return result
+
+    @staticmethod
+    def _cosine_denominator(tensor):
+        return tensor.pow(2).sum(1).pow(0.5)
