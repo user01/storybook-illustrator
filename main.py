@@ -20,27 +20,23 @@ parser.add_argument('--learningrate', type=float,
                     default=0.01, help='Learning Rate. Default=0.01')
 parser.add_argument('--seed', type=int, default=451,
                     help='Random seed. Default=451')
-parser.add_argument('--batch', type=int, default=10,
-                    help='Batch size. Default=10')
 parser.add_argument('--report', type=int, default=200,
                     help='Rate of reporting images. Default=200')
-# opt = parser.parse_args()
-opt = parser.parse_args(([
-    '--epochs',
-    '1',
-    '--learningrate',
-    '0.01',
-    '--batch',
-    '10',
-    '--seed',
-    '451'
-]))
+opt = parser.parse_args()
+# opt = parser.parse_args(([
+#     '--epochs',
+#     '1',
+#     '--learningrate',
+#     '0.01',
+#     '--seed',
+#     '451'
+# ]))
 
 Logger.log("Loading Word2Vec")
 word2vec = Word2Vec()
 Logger.log("Loading Data")
-loader_train = DataLoader('train', word2vec, opt.batch)
-loader_test = DataLoader('test', word2vec, opt.batch)
+loader_train = DataLoader('train', word2vec)
+loader_test = DataLoader('test', word2vec)
 
 Logger.log("Loading Network")
 CUDA_AVAILABLE = torch.cuda.is_available()
@@ -61,7 +57,7 @@ if CUDA_AVAILABLE:
     net = net.cuda()
 
 
-net.number_one = variable(torch.FloatTensor([1] * opt.batch))
+net.number_one = variable(torch.FloatTensor([1]))
 
 
 criterion = nn.MSELoss()
@@ -76,7 +72,7 @@ def train(epoch):
 
         image = variable(image)
         text = variable(text)
-        target = variable(distance)
+        target = variable(torch.FloatTensor([distance]))
 
         output = net(image, text)
         loss = criterion(output, target)
@@ -91,7 +87,7 @@ def train(epoch):
                                                                loss.data[0]))
 
     Logger.log("Epoch {} Complete: Avg. Loss: {:.4f}".format(
-        epoch, epoch_loss / len(loader.data_train)))
+        epoch, epoch_loss / len(loader_train)))
 
 
 def test():
@@ -109,11 +105,12 @@ def test():
         if idx % opt.report == 0:
             Logger.log("Current Avg. Test Loss: {:.4f}".format(
                 epoch_loss / (idx + 1)))
+
         if idx > 10 * opt.report:
             break # large testing currently not useful
 
     Logger.log("Avg. Test Loss: {:.4f}".format(
-        epoch_loss / len(loader.data_test)))
+        epoch_loss / len(loader_test)))
 
 
 def checkpoint(epoch):

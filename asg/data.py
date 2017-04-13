@@ -35,12 +35,10 @@ class DataLoader(object):
     def __init__(self,
                  group,
                  word2vec,
-                 batch_size=10,
                  mismatched_passes=3,
                  max_tokens=15,
                  seed=451):
         self._idx = -1
-        self._batch_size = batch_size
         self._max_tokens = max_tokens
         self._word2vec = word2vec
         self._mismatched_passes = mismatched_passes
@@ -121,18 +119,15 @@ class DataLoader(object):
         return self
 
     def __len__(self):
-        """Number of batches"""
-        return self._actual_length() // self._batch_size + 1
+        """Number of valid pairs, including mismatches"""
+        return self._actual_length()
 
     def __next__(self):
-        sets = []
         while self._idx < self._actual_length() - 1:
             self._idx += 1
             current_idx = self._idx % len(self._valid_texts)
             if self._valid_text(self._texts[current_idx]):
-                sets.append(self._current_image(current_idx))
-                if len(sets) == self._batch_size:
-                    return self._list_to_batch(sets)
+                return self._current_image(current_idx)
 
         raise StopIteration()
 
@@ -155,17 +150,3 @@ class DataLoader(object):
         distance = self._word2vec.word_mover_distance(text_actual, new_text)
         return (image, self._sentence_to_tensor(new_text), distance)
 
-    def _list_to_batch(self, sets):
-        """List of elements to a batch"""
-        images = torch.cat([s[0] for s in sets], 0)
-
-        texts = [s[1] for s in sets]
-        texts_a = [torch.cat([text, torch.unsqueeze(torch.zeros(
-            self._max_tokens - text.size()[0], 300), 1)]) for text in texts]
-        texts_final = torch.squeeze(torch.stack(texts_a, 1))
-
-        texts_positions = [text.size()[0] for text in texts]
-
-        distance_set = [s[2] for s in sets]
-        distances = torch.FloatTensor(distance_set).unsqueeze(1)
-        return images, texts_final, texts_positions, distances
