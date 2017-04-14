@@ -25,7 +25,7 @@ parser.add_argument('--report', type=int, default=200,
 opt = parser.parse_args()
 # opt = parser.parse_args(([
 #     '--epochs',
-#     '1',
+#     '10',
 #     '--learningrate',
 #     '0.01',
 #     '--seed',
@@ -67,7 +67,7 @@ optimizer = optim.SGD(net.parameters(), lr=opt.learningrate)
 def train(epoch):
     epoch_loss = 0
     net.train()
-    for idx, (image, text, distance) in enumerate(loader_train):
+    for idx, (image, text, distance) in enumerate(DataLoader('train', word2vec, seed=epoch)):
         optimizer.zero_grad()
 
         image = variable(image)
@@ -93,11 +93,12 @@ def train(epoch):
 def test():
     epoch_loss = 0
     net.eval()
-    for idx, (image, text, distance) in enumerate(loader_test):
+    for idx, (image, text, distance) in enumerate(DataLoader('test', word2vec)):
 
         image = variable(image)
         text = variable(text)
         target = variable(torch.FloatTensor([distance]))
+
         prediction = net(image, text)
         loss = criterion(prediction, target)
         epoch_loss += loss.data[0]
@@ -106,7 +107,7 @@ def test():
             Logger.log("Current Avg. Test Loss: {:.4f}".format(
                 epoch_loss / (idx + 1)))
 
-        if idx > 10 * opt.report:
+        if idx > 2 * opt.report:
             break # large testing currently not useful
 
     Logger.log("Avg. Test Loss: {:.4f}".format(
