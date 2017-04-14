@@ -1,6 +1,11 @@
 
 import os
 import argparse
+import glob
+import datetime
+import time
+import re
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -53,9 +58,22 @@ net = Net()
 if CUDA_AVAILABLE:
     net = net.cuda()
 
+starting_epoch = 0
+past_models = sorted(glob.glob(os.path.join('models', '*.pth')))
+if len(past_models) > 0:
+    past_model = past_models[-1]
+    epoch_regexp = re.compile(r".*epoch_(\d+)\.pth$")
+
+    regexp_result = epoch_regexp.match(past_model)
+    starting_epoch = int(regexp_result.groups()[0])
+
+    Logger.log("Found past model at epoch {} of {}".format(starting_epoch, past_model))
+    net.load_state_dict(torch.load(past_model))
+
+
+
 
 net.number_one = variable(torch.FloatTensor([1]))
-
 
 criterion = nn.CosineEmbeddingLoss()
 optimizer = optim.SGD(net.parameters(), lr=opt.learningrate)
@@ -63,6 +81,7 @@ optimizer = optim.SGD(net.parameters(), lr=opt.learningrate)
 
 def train(epoch):
     epoch_loss = 0
+    start_time = time.time()
     net.train()
     loader = DataLoader('train', word2vec, seed=epoch)
     for idx, (image, text, distance) in enumerate(loader):
@@ -84,8 +103,10 @@ def train(epoch):
                                                                len(loader),
                                                                loss.data[0] * 1000))
 
-    Logger.log("Epoch {} Complete: Avg. Loss: {:.4f}".format(
-        epoch, 1000 * epoch_loss / len(loader)))
+    end_time = time.time()
+    Logger.log("Epoch {} Complete: Avg. Loss: {:.4f} over {}".format(
+        epoch, 1000 * epoch_loss / len(loader),
+        Logger.human_seconds(end_time - start_time)))
 
 
 def test():
@@ -114,12 +135,12 @@ def test():
 
 
 def checkpoint(epoch):
-    model_out_path = os.path.join("models", "model_epoch_{}.pth".format(epoch))
-    torch.save(net, model_out_path)
+    model_out_path = os.path.join("models", "model_epoch_{:0>8}.pth".format(epoch))
+    torch.save(net.state_dict(), model_out_path)
     Logger.log("Checkpoint saved to {}".format(model_out_path))
 
 Logger.log("Starting ...")
-for epoch in range(1, opt.epochs + 1):
+for epoch in range(starting_epoch + 1, starting_epoch + opt.epochs + 1):
     train(epoch)
     test()
     checkpoint(epoch)

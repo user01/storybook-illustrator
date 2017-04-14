@@ -11,7 +11,7 @@ class Logger:
     _time_last = None
 
     @staticmethod
-    def _human_seconds(seconds):
+    def human_seconds(seconds):
         """Convert a number of seconds to a human readable string"""
         if seconds < 60:
             return '{: >5.1f} seconds'.format(seconds)
@@ -29,7 +29,7 @@ class Logger:
         # msg_last = '{} - {: >5.1f} seconds - {}'.format(now, now_time - TIME_LAST, content)
 
         if Logger._time_last is not None:
-            msg_last = Logger._human_seconds(now_time - Logger._time_last)
+            msg_last = Logger.human_seconds(now_time - Logger._time_last)
         else:
             msg_last = ' ' * 13
 
