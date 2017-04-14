@@ -113,14 +113,14 @@ class DataLoader(object):
 
     def _idx_length(self):
         """Actual number of image/text pairs"""
-        return len(self._valid_texts) * self._mismatched_passes
+        return len(self._texts) * self._mismatched_passes
 
     def __iter__(self):
         return self
 
     def __len__(self):
         """Number of valid pairs, including mismatches"""
-        return len(self._valid_texts)
+        return len(self._valid_texts) * self._mismatched_passes
 
     def __next__(self):
         while self._idx < self._idx_length() - 1:
@@ -139,12 +139,12 @@ class DataLoader(object):
 
         # one of the passes (0th), return the correct text with no distance
         if (self._idx // len(self._valid_texts)) == current_idx % self._mismatched_passes:
-            return (image, self._sentence_to_tensor(text_actual), 0)
+            return (image, self._sentence_to_tensor(text_actual), 1)
 
         # mismatch the text
         possible_texts = [
             text for text in self._valid_texts if text != text_actual]
         random.seed(self._idx + self._mismatched_passes + self._seed)
         new_text = random.choice(possible_texts)
-        distance = self._word2vec.word_mover_distance(text_actual, new_text)
-        return (image, self._sentence_to_tensor(new_text), distance)
+        # distance = self._word2vec.word_mover_distance(text_actual, new_text)
+        return (image, self._sentence_to_tensor(new_text), -1)

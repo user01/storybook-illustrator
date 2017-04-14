@@ -24,9 +24,9 @@ class Net(nn.Module):
         output_text_seq, _ = self._model_lstm(text_var)
 
         output_text_var = output_text_seq[-1]
-        output_distance = self.cosine_distance(output_image_var, output_text_var)
+        # output_distance = self.cosine_distance(output_image_var, output_text_var)
 
-        return output_distance
+        return output_image_var, output_text_var
 
     def cosine_distance(self, tensor_1, tensor_2):
         """Measure cosine distance of tensor variables"""

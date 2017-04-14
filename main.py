@@ -57,7 +57,7 @@ if CUDA_AVAILABLE:
 net.number_one = variable(torch.FloatTensor([1]))
 
 
-criterion = nn.MSELoss()
+criterion = nn.CosineEmbeddingLoss()
 optimizer = optim.SGD(net.parameters(), lr=opt.learningrate)
 
 
@@ -72,8 +72,8 @@ def train(epoch):
         text = variable(text)
         target = variable(torch.FloatTensor([distance]))
 
-        output = net(image, text)
-        loss = criterion(output, target)
+        output_image_var, output_text_var = net(image, text)
+        loss = criterion(output_image_var, output_text_var, target)
         epoch_loss += loss.data[0]
         loss.backward()
         optimizer.step()
@@ -98,8 +98,8 @@ def test():
         text = variable(text)
         target = variable(torch.FloatTensor([distance]))
 
-        prediction = net(image, text)
-        loss = criterion(prediction, target)
+        output_image_var, output_text_var = net(image, text)
+        loss = criterion(output_image_var, output_text_var, target)
         epoch_loss += loss.data[0]
 
         if idx % opt.report == 0:
