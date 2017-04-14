@@ -34,9 +34,6 @@ opt = parser.parse_args()
 
 Logger.log("Loading Word2Vec")
 word2vec = Word2Vec()
-Logger.log("Loading Data")
-loader_train = DataLoader('train', word2vec)
-loader_test = DataLoader('test', word2vec)
 
 Logger.log("Loading Network")
 CUDA_AVAILABLE = torch.cuda.is_available()
@@ -67,7 +64,8 @@ optimizer = optim.SGD(net.parameters(), lr=opt.learningrate)
 def train(epoch):
     epoch_loss = 0
     net.train()
-    for idx, (image, text, distance) in enumerate(DataLoader('train', word2vec, seed=epoch)):
+    loader = DataLoader('train', word2vec, seed=epoch)
+    for idx, (image, text, distance) in enumerate(loader):
         optimizer.zero_grad()
 
         image = variable(image)
@@ -83,17 +81,18 @@ def train(epoch):
         if idx % opt.report == 0:
             Logger.log("Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch,
                                                                idx,
-                                                               len(loader_train),
-                                                               loss.data[0]))
+                                                               len(loader),
+                                                               loss.data[0] * 1000))
 
     Logger.log("Epoch {} Complete: Avg. Loss: {:.4f}".format(
-        epoch, epoch_loss / len(loader_train)))
+        epoch, 1000 * epoch_loss / len(loader)))
 
 
 def test():
     epoch_loss = 0
     net.eval()
-    for idx, (image, text, distance) in enumerate(DataLoader('test', word2vec)):
+    loader = DataLoader('test', word2vec)
+    for idx, (image, text, distance) in enumerate(loader):
 
         image = variable(image)
         text = variable(text)
@@ -105,13 +104,13 @@ def test():
 
         if idx % opt.report == 0:
             Logger.log("Current Avg. Test Loss: {:.4f}".format(
-                epoch_loss / (idx + 1)))
+                1000 * epoch_loss / (idx + 1)))
 
         if idx > 2 * opt.report:
             break # large testing currently not useful
 
     Logger.log("Avg. Test Loss: {:.4f}".format(
-        epoch_loss / len(loader_test)))
+        1000 * epoch_loss / len(loader)))
 
 
 def checkpoint(epoch):

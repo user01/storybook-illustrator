@@ -65,7 +65,7 @@ class DataLoader(object):
         return datasets.ImageFolder(
             path,
             transforms.Compose([
-                transforms.RandomSizedCrop(224),
+                # transforms.RandomSizedCrop(224),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 DataLoader._NORMALIZE
@@ -111,7 +111,7 @@ class DataLoader(object):
         tokens = len(self._word2vec.tokenize(text))
         return tokens > 1 and tokens < self._max_tokens
 
-    def _actual_length(self):
+    def _idx_length(self):
         """Actual number of image/text pairs"""
         return len(self._valid_texts) * self._mismatched_passes
 
@@ -120,10 +120,10 @@ class DataLoader(object):
 
     def __len__(self):
         """Number of valid pairs, including mismatches"""
-        return self._actual_length()
+        return len(self._valid_texts)
 
     def __next__(self):
-        while self._idx < self._actual_length() - 1:
+        while self._idx < self._idx_length() - 1:
             self._idx += 1
             current_idx = self._idx % len(self._valid_texts)
             if self._valid_text(self._texts[current_idx]):
@@ -134,12 +134,11 @@ class DataLoader(object):
     def _current_image(self, current_idx):
         text_actual = self._texts[current_idx]
         image_raw, _ = self._images[current_idx]
-
         # resnet requires this shape of [1, 3, 224, 224]
         image = torch.unsqueeze(image_raw, 0)
 
         # one of the passes (0th), return the correct text with no distance
-        if (self._idx // len(self._valid_texts)) == 0:
+        if (self._idx // len(self._valid_texts)) == current_idx % self._mismatched_passes:
             return (image, self._sentence_to_tensor(text_actual), 0)
 
         # mismatch the text
@@ -149,4 +148,3 @@ class DataLoader(object):
         new_text = random.choice(possible_texts)
         distance = self._word2vec.word_mover_distance(text_actual, new_text)
         return (image, self._sentence_to_tensor(new_text), distance)
-
