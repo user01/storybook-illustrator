@@ -5,6 +5,7 @@ import glob
 import datetime
 import time
 import re
+import csv
 
 import torch
 import torch.nn as nn
@@ -71,6 +72,15 @@ if len(past_models) > 0:
     net.load_state_dict(torch.load(past_model))
 
 
+csv_path = os.path.join('models', 'results.csv')
+
+def write_line(arr):
+    with open(csv_path, 'w+') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(arr)
+
+if not os.path.isfile(csv_path):
+    write_line(['epoch', 'timestamp', 'loss'])
 
 
 net.number_one = variable(torch.FloatTensor([1]))
@@ -123,15 +133,12 @@ def test():
         loss = criterion(output_image_var, output_text_var, target)
         epoch_loss += loss.data[0]
 
-        if idx % opt.report == 0:
-            Logger.log("Current Avg. Test Loss: {:.4f}".format(
-                1000 * epoch_loss / (idx + 1)))
-
         if idx > 2 * opt.report:
             break # large testing currently not useful
 
-    Logger.log("Avg. Test Loss: {:.4f}".format(
-        1000 * epoch_loss / len(loader)))
+    full_loss = 1000 * epoch_loss / len(loader)
+    Logger.log("Avg. Test Loss: {:.4f}".format(full_loss))
+    write_line([epoch, datetime.datetime.now().isoformat(), full_loss])
 
 
 def checkpoint(epoch):
