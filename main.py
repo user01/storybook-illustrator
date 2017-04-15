@@ -6,6 +6,7 @@ import datetime
 import time
 import re
 import csv
+import multiprocessing
 
 import torch
 import torch.nn as nn
@@ -28,12 +29,20 @@ parser.add_argument('--learningrate', type=float,
                     default=0.01, help='Learning Rate. Default=0.01')
 parser.add_argument('--seed', type=int, default=451,
                     help='Random seed. Default=451')
+parser.add_argument('--batch', type=int, default=32,
+                    help='Batch size. Default=32')
+parser.add_argument('--workers', type=int, default=multiprocessing.cpu_count(),
+                    help='Number of workers for data loader. Defaults to system cores')
 parser.add_argument('--report', type=int, default=200,
                     help='Rate of reporting images. Default=200')
 opt = parser.parse_args()
 # opt = parser.parse_args(([
 #     '--epochs',
 #     '10',
+#     '--batch',
+#     '32',
+#     '--workers',
+#     '4',
 #     '--learningrate',
 #     '0.01',
 #     '--seed',
@@ -54,8 +63,8 @@ image_loader_train = ImageLoader('train',
                  ]))
 
 loader_train = data.DataLoader(image_loader_train,
-   batch_size=32, shuffle=True,
-   num_workers=4, pin_memory=True)
+   batch_size=opt.batch, shuffle=True,
+   num_workers=opt.workers, pin_memory=True)
 
 Logger.log("Loading Testing")
 image_loader_test = ImageLoader('test',
@@ -68,9 +77,8 @@ image_loader_test = ImageLoader('test',
                  ]))
 
 loader_test = data.DataLoader(image_loader_test,
-   batch_size=32, shuffle=True,
-   num_workers=4, pin_memory=True)
-   # num_workers=4, pin_memory=True, drop_last=True)
+   batch_size=opt.batch, shuffle=True,
+   num_workers=opt.workers, pin_memory=True)
 
 
 Logger.log("Loading Network")
