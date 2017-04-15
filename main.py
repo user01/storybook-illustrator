@@ -30,15 +30,15 @@ parser.add_argument('--seed', type=int, default=451,
                     help='Random seed. Default=451')
 parser.add_argument('--report', type=int, default=200,
                     help='Rate of reporting images. Default=200')
-# opt = parser.parse_args()
-opt = parser.parse_args(([
-    '--epochs',
-    '10',
-    '--learningrate',
-    '0.01',
-    '--seed',
-    '451'
-]))
+opt = parser.parse_args()
+# opt = parser.parse_args(([
+#     '--epochs',
+#     '10',
+#     '--learningrate',
+#     '0.01',
+#     '--seed',
+#     '451'
+# ]))
 
 Logger.log("Loading Word2Vec")
 word2vec = Word2Vec()
@@ -53,12 +53,12 @@ image_loader_train = ImageLoader('train',
                                           std=[0.229, 0.224, 0.225])
                  ]))
 
-train_loader = data.DataLoader(image_loader_train,
-   batch_size=4, shuffle=True,
+loader_train = data.DataLoader(image_loader_train,
+   batch_size=32, shuffle=True,
    num_workers=4, pin_memory=True)
 
 Logger.log("Loading Testing")
-image_loader_train = ImageLoader('test',
+image_loader_test = ImageLoader('test',
                  word2vec,
                  transform=transforms.Compose([
                      transforms.RandomHorizontalFlip(),
@@ -67,9 +67,10 @@ image_loader_train = ImageLoader('test',
                                           std=[0.229, 0.224, 0.225])
                  ]))
 
-train_loader = data.DataLoader(image_loader_train,
-   batch_size=4, shuffle=True,
+loader_test = data.DataLoader(image_loader_test,
+   batch_size=32, shuffle=True,
    num_workers=4, pin_memory=True)
+   # num_workers=4, pin_memory=True, drop_last=True)
 
 
 Logger.log("Loading Network")
@@ -96,67 +97,8 @@ optimizer = optim.SGD(net.parameters(), lr=opt.learningrate)
 
 
 
-net.train()
-# loader = DataLoader('train', word2vec, seed=epoch)
-
 def text_size_to_variables(text_sizes):
     return [variable(torch.LongTensor([text_size])) for text_size in text_sizes]
-
-for idx, (image, text, text_sizes, match) in enumerate(train_loader):
-    optimizer.zero_grad()
-
-    image = variable(image)
-    text = variable(text)
-    target = variable(match)
-    text_sizes_var = text_size_to_variables(text_sizes)
-
-    output_image_var, output_text_var = net(image, text, text_sizes_var)
-    loss = criterion(output_image_var, output_text_var, target)
-    loss.backward()
-    optimizer.step()
-    break
-
-
-output_image_var
-
-res = output_text_var.data.cpu()
-res
-
-ts = text_size.type(torch.LongTensor)
-
-lst = ts.squeeze().tolist()
-
-
-def gg(idx, elm):
-    return idx + elm
-
-[idx + elm for  idx, elm in enumerate(range(3))]
-
-
-
-
-list(map(lambda (idx, elm): torch.index_select(res, 1, torch.LongTensor([elm]))[idx], enumerate(lst)))
-torch.stack([torch.index_select(res, 1, torch.LongTensor([elm]))[idx] for idx, elm in enumerate(lst)])
-
-
-
-pp = torch.stack([torch.index_select(res, 1, torch.LongTensor([elm]))[idx] for idx, elm in enumerate(lst)])
-
-torch.squeeze(pp)
-
-ts.tolist()
-
-res[:]
-
-torch.index_select(res, 1, torch.LongTensor([1]))
-rd = torch.index_select(res, 1, ts.squeeze())
-rd
-
-
-torch.index_select(rd, 1, ts.squeeze())
-
-
-res[[1]]
 
 
 starting_epoch = 0
@@ -190,15 +132,15 @@ def train(epoch):
     epoch_loss = 0
     start_time = time.time()
     net.train()
-    loader = DataLoader('train', word2vec, seed=epoch)
-    for idx, (image, text, distance) in enumerate(loader):
+    for idx, (image, text, text_sizes, match) in enumerate(loader_train):
         optimizer.zero_grad()
 
         image = variable(image)
         text = variable(text)
-        target = variable(torch.FloatTensor([distance]))
+        target = variable(match)
+        text_sizes_var = text_size_to_variables(text_sizes)
 
-        output_image_var, output_text_var = net(image, text)
+        output_image_var, output_text_var = net(image, text, text_sizes_var)
         loss = criterion(output_image_var, output_text_var, target)
         epoch_loss += loss.data[0]
         loss.backward()
@@ -207,33 +149,33 @@ def train(epoch):
         if idx % opt.report == 0:
             Logger.log("Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch,
                                                                idx,
-                                                               len(loader),
+                                                               len(loader_train),
                                                                loss.data[0] * 1000))
 
     end_time = time.time()
     Logger.log("Epoch {} Complete: Avg. Loss: {:.4f} over {}".format(
-        epoch, 1000 * epoch_loss / len(loader),
+        epoch, 1000 * epoch_loss / len(loader_train),
         Logger.human_seconds(end_time - start_time)))
 
 
 def test():
     epoch_loss = 0
     net.eval()
-    loader = DataLoader('test', word2vec)
-    for idx, (image, text, distance) in enumerate(loader):
+    for idx, (image, text, text_sizes, match) in enumerate(loader_test):
 
         image = variable(image)
         text = variable(text)
-        target = variable(torch.FloatTensor([distance]))
+        target = variable(match)
+        text_sizes_var = text_size_to_variables(text_sizes)
 
-        output_image_var, output_text_var = net(image, text)
+        output_image_var, output_text_var = net(image, text, text_sizes_var)
         loss = criterion(output_image_var, output_text_var, target)
         epoch_loss += loss.data[0]
 
         if idx > 2 * opt.report:
             break  # large testing currently not useful
 
-    full_loss = 1000 * epoch_loss / len(loader)
+    full_loss = 1000 * epoch_loss / len(loader_test)
     Logger.log("Avg. Test Loss: {:.4f}".format(full_loss))
     write_line([epoch, datetime.datetime.now().isoformat(), full_loss])
 
