@@ -84,12 +84,14 @@ def check_path(path):
 # i_path = os.path.join(data_directory, 'train')
 def find_bad_images(root_path):
     """In the target path, return a list of all images not valid for processing"""
-    ps = [os.path.join(i_path,path) for path in os.listdir(root_path)]
+    ps = [os.path.join(root_path, path) for path in os.listdir(root_path)]
     ps_invalid = [check_path(path) for path in ps]
     ps_invalid_paths = [path for path in ps_invalid if path is not False]
 
     return ps_invalid_paths
 
+# find_bad_images(os.path.join(data_directory, 'train'))
+# find_bad_images(os.path.join(data_directory, 'test'))
 
 class ImageLoader(data.Dataset):
 
