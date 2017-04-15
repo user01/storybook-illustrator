@@ -58,9 +58,14 @@ train_loader = data.DataLoader(il,
    num_workers=4, pin_memory=True)
 
 for idx, d in enumerate(train_loader):
-    break
+    continue
 
-d
+tt = d[1]
+
+ff = tt.clone()
+ff
+
+
 
 Logger.log("Loading Network")
 CUDA_AVAILABLE = torch.cuda.is_available()
@@ -80,6 +85,35 @@ def variable(target):
 net = Net()
 if CUDA_AVAILABLE:
     net = net.cuda()
+
+criterion = nn.CosineEmbeddingLoss()
+optimizer = optim.SGD(net.parameters(), lr=opt.learningrate)
+
+
+for idx, (image, text, text_size, match) in enumerate(train_loader):
+    break
+
+net.train()
+# loader = DataLoader('train', word2vec, seed=epoch)
+for idx, (image, text, text_size, match) in enumerate(train_loader):
+    optimizer.zero_grad()
+
+    image = variable(image)
+    text = variable(text)
+    target = variable(torch.FloatTensor([distance]))
+
+    output_image_var, output_text_var = net(image, text)
+    break
+    loss = criterion(output_image_var, output_text_var, target)
+    loss.backward()
+    optimizer.step()
+
+
+
+
+
+
+
 
 starting_epoch = 0
 past_models = sorted(glob.glob(os.path.join('models', '*.pth')))
@@ -106,12 +140,6 @@ def write_line(arr):
 
 if not os.path.isfile(csv_path):
     write_line(['epoch', 'timestamp', 'loss'])
-
-
-net.number_one = variable(torch.FloatTensor([1]))
-
-criterion = nn.CosineEmbeddingLoss()
-optimizer = optim.SGD(net.parameters(), lr=opt.learningrate)
 
 
 def train(epoch):

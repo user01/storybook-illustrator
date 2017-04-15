@@ -121,11 +121,20 @@ class ImageLoader(data.Dataset):
                                             len(self._valid_values) - 1) + idx) % len(self._valid_values)
             _, text, text_size = self._valid_values[idx_different]
 
-        target = torch.Tensor([[1 if real_pass else -1]])
+        target = torch.Tensor([1 if real_pass else -1])
 
         if self.target_transform is not None:
             target = self.target_transform(target)
 
+        if img.size()[1] != 224 or img.size()[2] != 224:
+            raise(RuntimeError("Invalid image size at " + filename + "\n"))
+
+
+        print('────────────────────────────────────────────────────')
+        print("img Size       ", img.size())
+        print("text Size      ", text.size())
+        print("text_size Size ", text_size.size())
+        print("target Size    ", target.size())
         return img, text, text_size, target
 
     def __len__(self):
