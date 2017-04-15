@@ -26,7 +26,7 @@ def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 
 def _vector_to_tensor(vec):
-    return torch.unsqueeze(torch.from_numpy(vec), 0)
+    return torch.from_numpy(vec)
 
 def _vectors_to_tensor(vectors, tensor_size_min, tensor_size_max):
     tensors = list(map(_vector_to_tensor, vectors))
@@ -45,10 +45,8 @@ def _sentence_to_tensor(sentence, word2vec, tensor_size_min, tensor_size_max):
         return text, torch.Tensor([tensor_size_max])
     text_size = text.size()[0]
     texts_padded = torch.cat([text,
-                              torch.unsqueeze(
-                                  torch.zeros(tensor_size_max - text_size, 300),
-                                  1)
-                              ])
+                              torch.zeros(tensor_size_max - text_size, 300)
+                             ])
     return texts_padded, torch.Tensor([text_size])
 
 
