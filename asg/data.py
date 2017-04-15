@@ -70,6 +70,27 @@ def default_loader(path):
     return Image.open(path).convert('RGB')
 
 
+def check_path(path):
+    try:
+        img = default_loader(path)
+    except:
+        return path
+
+    tensor = transforms.ToTensor()(img)
+    if tensor.size()[1] != 224 or tensor.size()[2] != 224:
+        return path
+    return False
+
+# i_path = os.path.join(data_directory, 'train')
+def find_bad_images(root_path):
+    """In the target path, return a list of all images not valid for processing"""
+    ps = [os.path.join(i_path,path) for path in os.listdir(root_path)]
+    ps_invalid = [check_path(path) for path in ps]
+    ps_invalid_paths = [path for path in ps_invalid if path is not False]
+
+    return ps_invalid_paths
+
+
 class ImageLoader(data.Dataset):
 
     def __init__(self,
@@ -129,12 +150,6 @@ class ImageLoader(data.Dataset):
         if img.size()[1] != 224 or img.size()[2] != 224:
             raise(RuntimeError("Invalid image size at " + filename + "\n"))
 
-
-        print('────────────────────────────────────────────────────')
-        print("img Size       ", img.size())
-        print("text Size      ", text.size())
-        print("text_size Size ", text_size.size())
-        print("target Size    ", target.size())
         return img, text, text_size, target
 
     def __len__(self):
