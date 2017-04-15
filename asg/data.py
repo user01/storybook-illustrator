@@ -40,16 +40,16 @@ def _sentence_to_tensor(sentence, word2vec, tensor_size_min, tensor_size_max):
         sentence), tensor_size_min, tensor_size_max)
     if not torch.is_tensor(text):
         return False, 0
-    print(text.size())
+
     if text.size()[0] >= tensor_size_max:
-        return text, tensor_size_max
+        return text, torch.Tensor([tensor_size_max])
     text_size = text.size()[0]
     texts_padded = torch.cat([text,
                               torch.unsqueeze(
                                   torch.zeros(tensor_size_max - text_size, 300),
                                   1)
                               ])
-    return texts_padded, text_size
+    return texts_padded, torch.Tensor([text_size])
 
 
 _REGEXP_ID = re.compile(r'^(.+)\.\D+$', re.IGNORECASE)
@@ -66,22 +66,6 @@ def _img_path_to_text(filename, annotations):
 
     return annotations[groups[0]] if groups[0] in annotations else False
 
-
-def make_dataset(dir, class_to_idx):
-    images = []
-    for target in os.listdir(dir):
-        d = os.path.join(dir, target)
-        if not os.path.isdir(d):
-            continue
-
-        for root, _, fnames in sorted(os.walk(d)):
-            for fname in fnames:
-                if is_image_file(fname):
-                    path = os.path.join(root, fname)
-                    item = (path, class_to_idx[target])
-                    images.append(item)
-
-    return images
 
 
 def default_loader(path):
