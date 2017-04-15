@@ -75,7 +75,7 @@ if len(past_models) > 0:
 csv_path = os.path.join('models', 'results.csv')
 
 def write_line(arr):
-    with open(csv_path, 'w+') as csvfile:
+    with open(csv_path, 'a') as csvfile:
         csvwriter = csv.writer(csvfile)
         csvwriter.writerow(arr)
 
