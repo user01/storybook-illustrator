@@ -43,8 +43,8 @@ opt = parser.parse_args(([
 Logger.log("Loading Word2Vec")
 word2vec = Word2Vec()
 
-
-il = ImageLoader('train',
+Logger.log("Loading Training")
+image_loader_train = ImageLoader('train',
                  word2vec,
                  transform=transforms.Compose([
                      transforms.RandomHorizontalFlip(),
@@ -53,18 +53,23 @@ il = ImageLoader('train',
                                           std=[0.229, 0.224, 0.225])
                  ]))
 
-train_loader = data.DataLoader(il,
+train_loader = data.DataLoader(image_loader_train,
    batch_size=4, shuffle=True,
    num_workers=4, pin_memory=True)
 
-for idx, d in enumerate(train_loader):
-    continue
+Logger.log("Loading Testing")
+image_loader_train = ImageLoader('test',
+                 word2vec,
+                 transform=transforms.Compose([
+                     transforms.RandomHorizontalFlip(),
+                     transforms.ToTensor(),
+                     transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                          std=[0.229, 0.224, 0.225])
+                 ]))
 
-tt = d[1]
-
-ff = tt.clone()
-ff
-
+train_loader = data.DataLoader(image_loader_train,
+   batch_size=4, shuffle=True,
+   num_workers=4, pin_memory=True)
 
 
 Logger.log("Loading Network")
@@ -90,29 +95,68 @@ criterion = nn.CosineEmbeddingLoss()
 optimizer = optim.SGD(net.parameters(), lr=opt.learningrate)
 
 
-for idx, (image, text, text_size, match) in enumerate(train_loader):
-    break
 
 net.train()
 # loader = DataLoader('train', word2vec, seed=epoch)
-for idx, (image, text, text_size, match) in enumerate(train_loader):
+
+def text_size_to_variables(text_sizes):
+    return [variable(torch.LongTensor([text_size])) for text_size in text_sizes]
+
+for idx, (image, text, text_sizes, match) in enumerate(train_loader):
     optimizer.zero_grad()
 
     image = variable(image)
     text = variable(text)
-    target = variable(torch.FloatTensor([distance]))
+    target = variable(match)
+    text_sizes_var = text_size_to_variables(text_sizes)
 
-    output_image_var, output_text_var = net(image, text)
-    break
+    output_image_var, output_text_var = net(image, text, text_sizes_var)
     loss = criterion(output_image_var, output_text_var, target)
     loss.backward()
     optimizer.step()
+    break
+
+
+output_image_var
+
+res = output_text_var.data.cpu()
+res
+
+ts = text_size.type(torch.LongTensor)
+
+lst = ts.squeeze().tolist()
+
+
+def gg(idx, elm):
+    return idx + elm
+
+[idx + elm for  idx, elm in enumerate(range(3))]
 
 
 
 
+list(map(lambda (idx, elm): torch.index_select(res, 1, torch.LongTensor([elm]))[idx], enumerate(lst)))
+torch.stack([torch.index_select(res, 1, torch.LongTensor([elm]))[idx] for idx, elm in enumerate(lst)])
 
 
+
+pp = torch.stack([torch.index_select(res, 1, torch.LongTensor([elm]))[idx] for idx, elm in enumerate(lst)])
+
+torch.squeeze(pp)
+
+ts.tolist()
+
+res[:]
+
+torch.index_select(res, 1, torch.LongTensor([1]))
+rd = torch.index_select(res, 1, ts.squeeze())
+rd
+
+
+torch.index_select(rd, 1, ts.squeeze())
+
+
+res[[1]]
 
 
 starting_epoch = 0

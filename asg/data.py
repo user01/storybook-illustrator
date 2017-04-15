@@ -42,12 +42,13 @@ def _sentence_to_tensor(sentence, word2vec, tensor_size_min, tensor_size_max):
         return False, 0
 
     if text.size()[0] >= tensor_size_max:
-        return text, torch.Tensor([tensor_size_max])
+        # note the -1 handles the 0 indices
+        return text, tensor_size_max - 1
     text_size = text.size()[0]
     texts_padded = torch.cat([text,
                               torch.zeros(tensor_size_max - text_size, 300)
                              ])
-    return texts_padded, torch.Tensor([text_size])
+    return texts_padded, text_size - 1
 
 
 _REGEXP_ID = re.compile(r'^(.+)\.\D+$', re.IGNORECASE)
