@@ -74,28 +74,37 @@ The **DATA_DIRECTORY** needs to have the following structure:
 
 ```
 DATA_DIRECTORY/
-┣━━GoogleNews-vectors-negative300.bin
-┗━┳━dii/
-  ┣━sis/
-  ┣━train━images━images┳━image.0.jpg
-  ┃                    ┣━image.1.jpg
-  ┃                    ┣━...
-  ┃                    ┗━image.12.jpg
-  ┗━test━━images━test━━┳━image.0.jpg
-                       ┣━image.1.jpg
-                       ┣━...
-                       ┗━image.12.jpg
+┣━GoogleNews-vectors-negative300.bin
+┣━┳━dii/
+┃ ┣━test.description-in-isolation.json
+┃ ┣━train.description-in-isolation.json
+┃ ┗━val.description-in-isolation.json
+┣━┳━sis/
+┃ ┣━test.story-in-sequence.json
+┃ ┣━train.story-in-sequence.json
+┃ ┗━val.story-in-sequence.json
+┣━┳━train/
+┃ ┣━image.0.jpg
+┃ ┣━image.1.jpg
+┃ ┣━...
+┃ ┗━image.9.jpg
+┗━┳━test/
+  ┣━image.0.jpg
+  ┣━image.1.jpg
+  ┣━...
+  ┗━image.9.jpg
 ```
 
  * `dii` contains the Description in Isolation JSON
  * `sis` contains the Story in Sequence JSON
- * `train` contains the training images, in two subfolders (extracted train_split.*.tar.gz)
- * `test` contains the testing images, in two subfolders (extracted test_split.tar.gz)
+ * `train` contains the training images (extracted train_split.*.tar.gz)
+ * `test` contains the testing images (extracted test_split.tar.gz)
 
 The deep folder structure is an artifact of how pytorch's Image Folder considers the assets.
 
-#### ImageMagick Command
+#### ImageMagick Commands
 
 ```bash
 mogrify -path . -resize "224x224^" -gravity center -crop 224x224+0+0 *.*
+parallel -j4 mogrify -path . -resize "224x224^" -gravity center -crop 224x224+0+0 {}*.* ::: {1..9}
 ```
