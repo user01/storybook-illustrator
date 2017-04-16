@@ -135,6 +135,7 @@ if not os.path.isfile(csv_path):
 def train(epoch):
     epoch_loss = 0
     start_time = time.time()
+    step_time_last = time.time()
     net.train()
     for idx, (image, text, text_sizes, match) in enumerate(loader_train):
         optimizer.zero_grad()
@@ -151,10 +152,16 @@ def train(epoch):
         optimizer.step()
 
         if idx % opt.report == 0:
-            Logger.log("Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch,
-                                                               idx,
-                                                               len(loader_train),
-                                                               loss.data[0] * 1000))
+            step_time = time.time()
+            samples_per_second = opt.batch * opt.report / \
+                (step_time - step_time_last) if idx > 0 else 0
+            step_time_last = step_time
+            Logger.log("[{}]({}/{}) Loss: {:.2f} | {:.1f} samples/second".format(epoch,
+                                                                                 idx,
+                                                                                 len(loader_train),
+                                                                                 loss.data[0] *
+                                                                                 1000,
+                                                                                 samples_per_second))
 
     end_time = time.time()
     Logger.log("Epoch {} Complete: Avg. Loss: {:.4f} over {}".format(
@@ -165,7 +172,7 @@ def train(epoch):
 def test():
     epoch_loss = 0
     net.eval()
-    for idx, (image, text, text_sizes, match) in enumerate(loader_test):
+    for image, text, text_sizes, match in loader_test:
 
         image = variable(image)
         text = variable(text)
@@ -175,9 +182,6 @@ def test():
         output_image_var, output_text_var = net(image, text, text_sizes_var)
         loss = criterion(output_image_var, output_text_var, target)
         epoch_loss += loss.data[0]
-
-        if idx > 2 * opt.report:
-            break  # large testing currently not useful
 
     full_loss = 1000 * epoch_loss / len(loader_test)
     Logger.log("Avg. Test Loss: {:.4f}".format(full_loss))
