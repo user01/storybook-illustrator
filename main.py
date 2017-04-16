@@ -53,32 +53,29 @@ Logger.log("Loading Word2Vec")
 word2vec = Word2Vec()
 
 Logger.log("Loading Training")
+loader_transforms = transforms.Compose([
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])
+])
+
 image_loader_train = ImageLoader('train',
-                 word2vec,
-                 transform=transforms.Compose([
-                     transforms.RandomHorizontalFlip(),
-                     transforms.ToTensor(),
-                     transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                          std=[0.229, 0.224, 0.225])
-                 ]))
+                                 word2vec,
+                                 transform=loader_transforms)
 
 loader_train = data.DataLoader(image_loader_train,
-   batch_size=opt.batch, shuffle=True,
-   num_workers=opt.workers, pin_memory=True)
+                               batch_size=opt.batch, shuffle=True,
+                               num_workers=opt.workers, pin_memory=True)
 
 Logger.log("Loading Testing")
 image_loader_test = ImageLoader('test',
-                 word2vec,
-                 transform=transforms.Compose([
-                     transforms.RandomHorizontalFlip(),
-                     transforms.ToTensor(),
-                     transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                          std=[0.229, 0.224, 0.225])
-                 ]))
+                                word2vec,
+                                transform=loader_transforms)
 
 loader_test = data.DataLoader(image_loader_test,
-   batch_size=opt.batch, shuffle=True,
-   num_workers=opt.workers, pin_memory=True)
+                              batch_size=opt.batch, shuffle=True,
+                              num_workers=opt.workers, pin_memory=True)
 
 
 Logger.log("Loading Network")
@@ -102,7 +99,6 @@ if CUDA_AVAILABLE:
 
 criterion = nn.CosineEmbeddingLoss()
 optimizer = optim.SGD(net.parameters(), lr=opt.learningrate)
-
 
 
 def text_size_to_variables(text_sizes):
