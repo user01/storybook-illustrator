@@ -93,3 +93,7 @@ data.directory.txt
 
 # Ignore generated model checkpoints
 models/*.pth
+models/results.csv
+
+# IDE Files
+.vscode/
