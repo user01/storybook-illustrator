@@ -29,6 +29,8 @@ parser.add_argument('--learningrate', type=float,
                     default=0.01, help='Learning Rate. Default=0.01')
 parser.add_argument('--seed', type=int, default=451,
                     help='Random seed. Default=451')
+parser.add_argument('--cuda', type=int, default=0,
+                    help='Cuda Device to use. Default=0')
 parser.add_argument('--batch', type=int, default=32,
                     help='Batch size. Default=32')
 parser.add_argument('--workers', type=int, default=multiprocessing.cpu_count(),
@@ -83,6 +85,8 @@ CUDA_AVAILABLE = torch.cuda.is_available()
 
 torch.manual_seed(opt.seed)
 if CUDA_AVAILABLE:
+    torch.cuda.set_device(opt.cuda)
+    Logger.log("Using Cuda Device: {}".format(torch.cuda.current_device()))
     torch.cuda.manual_seed(opt.seed)
 
 
