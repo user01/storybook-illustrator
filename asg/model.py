@@ -13,18 +13,20 @@ class Net(nn.Module):
         super(Net, self).__init__()
 
         self._cnn = models.resnet18(pretrained=True)
-        self._cnn.fc = nn.Linear(512, 300, True)
+        self._cnn_final_01 = nn.Linear(1000, 512, True)
+        self._cnn_final_02 = nn.Linear(512, 300, True)
 
-        self._model_lstm = nn.LSTM(300, 300, 2, batch_first=True)
+        self._model_lstm = nn.LSTM(300, 300, 4, dropout=0.2, batch_first=True)
 
     def forward(self, image_var, text_var, text_sizes):
         """Overridden forward method"""
-        output_image_var = self._cnn(image_var)
+        output_cnn_var = self._cnn(image_var)
+        output_final_01_var = self._cnn_final_01(output_cnn_var)
+        output_image_var = self._cnn_final_02(output_final_01_var)
         output_text_seq, _ = self._model_lstm(text_var)
 
         output_text_var = output_text_seq
         output_text_var = Net._select_from_lstm(output_text_seq, text_sizes)
-        # output_distance = self.cosine_distance(output_image_var, output_text_var)
 
         return output_image_var, output_text_var
 
