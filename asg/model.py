@@ -22,7 +22,7 @@ class Net(nn.Module):
     def forward(self, image_var, text_var, text_sizes):
         """Overridden forward method"""
         im_image_var = self._cnn(image_var)
-        output_image_var = self._cnn_fc(sef._cnn_fc_dropout(im_image_var))
+        output_image_var = self._cnn_fc(self._cnn_fc_dropout(im_image_var))
         output_text_seq, _ = self._model_lstm(text_var)
 
         output_text_var = output_text_seq
