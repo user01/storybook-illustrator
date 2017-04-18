@@ -7,6 +7,7 @@ import time
 import re
 import csv
 import multiprocessing
+import subprocess
 
 import torch
 import torch.nn as nn
@@ -49,6 +50,12 @@ opt = parser.parse_args()
 #     '451'
 # ]))
 
+git_head = subprocess.check_output(['git',
+                                    'rev-parse',
+                                    '--short',
+                                    'HEAD']).strip().decode('UTF-8')
+Logger.log("Starting with model for {}".format(git_head))
+
 Logger.log("Loading Word2Vec")
 word2vec = Word2Vec()
 
@@ -83,6 +90,7 @@ CUDA_AVAILABLE = torch.cuda.is_available()
 
 torch.manual_seed(opt.seed)
 if CUDA_AVAILABLE:
+    torch.cuda.set_device(1)
     torch.cuda.manual_seed(opt.seed)
 
 
@@ -106,7 +114,7 @@ def text_size_to_variables(text_sizes):
 
 
 starting_epoch = 0
-past_models = sorted(glob.glob(os.path.join('models', '*.pth')))
+past_models = sorted(glob.glob(os.path.join('models', 'model_{}*.pth'.format(git_head))))
 if len(past_models) > 0:
     past_model = past_models[-1]
     epoch_regexp = re.compile(r".*epoch_(\d+)\.pth$")
@@ -119,7 +127,7 @@ if len(past_models) > 0:
     net.load_state_dict(torch.load(past_model))
 
 
-csv_path = os.path.join('models', 'results.csv')
+csv_path = os.path.join('models', 'results_{}.csv'.format(git_head))
 
 
 def write_line(arr):
@@ -186,7 +194,7 @@ def test():
 
 def checkpoint(epoch):
     model_out_path = os.path.join(
-        "models", "model_epoch_{:0>8}.pth".format(epoch))
+        "models", "model_{}_epoch_{:0>8}.pth".format(git_head, epoch))
     torch.save(net.state_dict(), model_out_path)
     Logger.log("Checkpoint saved to {}".format(model_out_path))
 
