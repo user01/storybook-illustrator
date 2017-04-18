@@ -106,7 +106,7 @@ if CUDA_AVAILABLE:
     net = net.cuda()
 
 criterion = nn.CosineEmbeddingLoss()
-optimizer = optim.SGD(net.parameters(), lr=opt.learningrate)
+optimizer = optim.Adam(net.parameters())
 
 
 def text_size_to_variables(text_sizes):
