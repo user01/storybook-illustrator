@@ -184,8 +184,6 @@ def test():
         loss = criterion(output_image_var, output_text_var, target)
         epoch_loss += loss.data[0]
 
-        if idx > 2 * opt.report:
-            break  # large testing currently not useful
 
     full_loss = 1000 * epoch_loss / len(loader_test)
     Logger.log("Avg. Test Loss: {:.4f}".format(full_loss))
