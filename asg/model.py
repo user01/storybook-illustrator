@@ -17,7 +17,9 @@ class Net(nn.Module):
         self._cnn_fc_dropout = nn.Dropout(0.4)
         self._cnn_fc = nn.Linear(512, 300, True)
 
-        self._model_lstm = nn.LSTM(300, 300, 2, batch_first=True, dropout=0.4)
+        self._model_lstm = nn.LSTM(300, 300, 1, batch_first=True)
+        self._lstm_dropout = nn.Dropout(0.4)
+        self._lstm_fc = nn.Linear(300, 300, True)
 
     def forward(self, image_var, text_var, text_sizes):
         """Overridden forward method"""
@@ -27,7 +29,8 @@ class Net(nn.Module):
 
         output_text_var = output_text_seq
         output_text_var = Net._select_from_lstm(output_text_seq, text_sizes)
-        # output_distance = self.cosine_distance(output_image_var, output_text_var)
+        output_text_var = self._lstm_dropout(output_text_var)
+        output_text_var = self._lstm_fc(output_text_var)
 
         return output_image_var, output_text_var
 
