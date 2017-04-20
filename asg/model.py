@@ -13,24 +13,25 @@ class Net(nn.Module):
         super(Net, self).__init__()
 
         self._cnn = models.resnet18(pretrained=True)
-        self._cnn.fc = nn.Linear(512, 512, True)
-        self._cnn_fc_dropout = nn.Dropout(0.4)
-        self._cnn_fc = nn.Linear(512, 300, True)
+        self._cnn.fc = nn.Linear(512, 1024, True)
+        self._cnn_fc_dropout_01 = nn.Dropout(0.4)
+        self._cnn_fc_01 = nn.Linear(1024, 1024, True)
+        self._cnn_fc_dropout_02 = nn.Dropout(0.4)
+        self._cnn_fc_02 = nn.Linear(1024, 300, True)
 
-        self._model_lstm = nn.LSTM(300, 300, 1, batch_first=True)
-        self._lstm_dropout = nn.Dropout(0.4)
-        self._lstm_fc = nn.Linear(300, 300, True)
+        self._model_lstm = nn.LSTM(300, 300, 2, batch_first=True)
 
     def forward(self, image_var, text_var, text_sizes):
         """Overridden forward method"""
         im_image_var = self._cnn(image_var)
-        output_image_var = self._cnn_fc(self._cnn_fc_dropout(im_image_var))
+        output_image_var = self._cnn_fc_01(im_image_var)
+        output_image_var = self._cnn_fc_dropout_01(output_image_var)
+        output_image_var = self._cnn_fc_02(im_image_var)
+        output_image_var = self._cnn_fc_dropout_02(output_image_var)
         output_text_seq, _ = self._model_lstm(text_var)
 
         output_text_var = output_text_seq
         output_text_var = Net._select_from_lstm(output_text_seq, text_sizes)
-        output_text_var = self._lstm_dropout(output_text_var)
-        output_text_var = self._lstm_fc(output_text_var)
 
         return output_image_var, output_text_var
 
