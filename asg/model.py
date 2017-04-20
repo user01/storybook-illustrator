@@ -13,11 +13,11 @@ class Net(nn.Module):
         super(Net, self).__init__()
 
         self._cnn = models.resnet18(pretrained=True)
-        self._cnn.fc = nn.Linear(512, 1024, True)
+        self._cnn.fc = nn.Linear(512, 512, True)
         self._cnn_fc_dropout_01 = nn.Dropout(0.4)
-        self._cnn_fc_01 = nn.Linear(1024, 1024, True)
+        self._cnn_fc_01 = nn.Linear(512, 300, True)
         self._cnn_fc_dropout_02 = nn.Dropout(0.4)
-        self._cnn_fc_02 = nn.Linear(1024, 300, True)
+        self._cnn_fc_02 = nn.Linear(300, 300, True)
 
         self._model_lstm = nn.LSTM(300, 300, 2, batch_first=True)
 
