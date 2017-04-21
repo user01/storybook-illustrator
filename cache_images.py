@@ -127,7 +127,7 @@ for index, (filenames, images) in enumerate(loader_train):
     output_image_var, _ = net(images, text, text_sizes_var)
 
     data = output_image_var.data.cpu()
-    for idx in range(opt.batch):
+    for idx in range(min(opt.batch, len(filenames))):
         filename = filenames[idx]
         tensor = data[idx].tolist()
         filename_to_embedding[filename] = tensor
