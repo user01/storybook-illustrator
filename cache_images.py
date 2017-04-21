@@ -138,8 +138,6 @@ for index, (filenames, images) in enumerate(loader_train):
                 index,
                 len(loader_train)
             ))
-    if index > 50:
-        break
 
 
 Logger.log("Reading Complete")
