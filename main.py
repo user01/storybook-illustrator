@@ -106,7 +106,7 @@ if CUDA_AVAILABLE:
     net = net.cuda()
 
 criterion = nn.CosineEmbeddingLoss()
-optimizer = optim.Adam(net.parameters())
+optimizer = optim.SGD(net.parameters(), lr=opt.learningrate)
 
 
 def text_size_to_variables(text_sizes):
@@ -184,8 +184,6 @@ def test():
         loss = criterion(output_image_var, output_text_var, target)
         epoch_loss += loss.data[0]
 
-        if idx > 2 * opt.report:
-            break  # large testing currently not useful
 
     full_loss = 1000 * epoch_loss / len(loader_test)
     Logger.log("Avg. Test Loss: {:.4f}".format(full_loss))
