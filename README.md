@@ -93,3 +93,9 @@ DATA_DIRECTORY/
  * `test` contains the testing images, in two subfolders (extracted test_split.tar.gz)
 
 The deep folder structure is an artifact of how pytorch's Image Folder considers the assets.
+
+#### ImageMagick Command
+
+```bash
+mogrify -path . -resize "224x224^" -gravity center -crop 224x224+0+0 *.*
+```
