@@ -1,42 +1,76 @@
-
 # coding: utf-8
 
-# In[65]:
-
-# import os
-# import argparse
-# import torch
-# import torch.nn as nn
-# import torch.optim as optim
-# from torch.autograd import Variable
-# 
-# from asg.model import Net
-# from asg.logger import Logger
-# from asg.word2vec import Word2Vec
-# from asg.data import DataLoader
-
-
-# In[66]:
+import re
+import operator
+import argparse
+from functools import reduce
+import multiprocessing
 
 import numpy as np
 from scipy import spatial
-import operator
-from functools import reduce
+import torch
+import torchvision.transforms as transforms
+from torch.autograd import Variable
+
+from asg.datadirectory import data_directory
+from asg.model import Net
+from asg.logger import Logger
 
 
-# ### Storyboard Selection
-# #### 1. Parse text corpus into sentences
-# #### 2. Create dummy image and sentence embeddings
-# #### 3. Get closest k = 5 dummy images for each dummy sentence
-# #### 4. Create final storyboard by selecting image closest to previous sentence's image (first sentence's image is closest image to sentence)
-# 
+parser = argparse.ArgumentParser(
+    description='Automated Storyboard Generator')
 
-# In[69]:
+parser.add_argument('--model', type=str,
+                    help='Path to model')
+parser.add_argument('--embedding', type=str,
+                    help='Path to image embedding')
+parser.add_argument('--text', type=str,
+                    help='Path to input text')
+parser.add_argument('--output', type=str,
+                    help='Path to output directory')
+
+parser.add_argument('--seed', type=int, default=451,
+                    help='Random seed. Default=451')
+parser.add_argument('--batch', type=int, default=32,
+                    help='Batch size. Default=32')
+parser.add_argument('--workers', type=int, default=multiprocessing.cpu_count(),
+                    help='Number of workers for data loader. Defaults to system cores')
+
+# opt = parser.parse_args()
+opt = parser.parse_args(([
+    '--model',
+    'models/model_a532783_epoch_0000018.pth',
+    '--embedding',
+    'models/model_a532783_epoch_0000018.pth',
+    '--text',
+    'a.bell.rings.txt'
+]))
+
+### Storyboard Selection
+#### 1. Parse text corpus into sentences
+#### 2. Create dummy image and sentence embeddings
+#### 3. Get closest k = 5 dummy images for each dummy sentence
+#### 4. Create final storyboard by selecting image closest to previous sentence's image (first sentence's image is closest image to sentence)
+
+Logger.log("Init")
+
+with open(opt.text, 'r') as f:
+    raw_lines = f.read() \
+                .split('\n\n')
+
+raw_lines = list(map(lambda line: line.replace('\n', ' '), raw_texts))
+
+Logger.log("Read Text")
+
+
+with open('temp.json') as f:
+    image_dict = json.load(f)
+
+Logger.log("Read Image Embeddings")
 
 # parse corpus into sentences
 
 # http://stackoverflow.com/questions/4576077/python-split-text-on-sentences
-import re
 caps = "([A-Z])"
 prefixes = "(Mr|St|Mrs|Ms|Dr)[.]"
 suffixes = "(Inc|Ltd|Jr|Sr|Co)"
@@ -71,46 +105,20 @@ def split_into_sentences(text):
     return sentences
 
 
-# In[70]:
 
-text = "I like pigs. I like pigs that can fly. I like cats. I like cats that can fetch."
+# split_into_sentences(raw_text)
 
-
-# In[71]:
-
-split_into_sentences(text)
+map(split_into_sentences, raw_lines)
+list(_)
 
 
-# In[72]:
-
-# sample images
-images = ["000.jpg", "100.jpg", "200.jpg", "300.jpg", "400.jgp", "500.jpg", "600.jpg", "700.jpg", "800.jpg", "900.jpg"]
-
-# dict that holds image name and embedding
-image_dict = {}
-
-# produce 300-d embedding for each image (what CNN will do)
-for i in range(len(images)):
-    image_dict[images[i]] = np.random.randint(5, size=(1,300))
-
-
-# In[87]:
-
-# produce 300-d embedding for 10 sentences (what LSTM will do)
-sentence_embeddings = []
-
-for i in range(10):
-    sentence_embeddings.append(np.random.randint(5, size=(1,300)))
-
-
-# In[186]:
 
 # get closest k images for each sentence
 def top_images(sentence_embedding, image_dict, k=5):
     similarities = {}
     for key, value in image_dict.items():
         similarities[key] = 1 - spatial.distance.cosine(sentence_embedding, value)
-        sorted_sim = sorted(similarities.items(), key=operator.itemgetter(1), reverse=True)
+    sorted_sim = sorted(similarities.items(), key=operator.itemgetter(1), reverse=True)
     top = []
     for i in range(k):
         top.append((sorted_sim[i][0], image_dict[sorted_sim[i][0]]))
@@ -141,22 +149,21 @@ candidates = list(image_pics)
 storyboard = []
 
 for i in range(len(candidates)):
-    
+
     if i == 0:
         storyboard.append((candidates[0][0][0], candidates[0][0][1])) # closest image to first sentence
         continue
-        
+
     temp = []
-    
+
     for j in range(0,k):
         temp.append(1 - spatial.distance.cosine(candidates[i][j][1], storyboard[i-1][1]))
-    
+
     idx = temp.index(max(temp)) # closest image to top image for previous sentence
-    storyboard.append((candidates[i][idx][0], candidates[i][idx][1]))  # add to final storyboard array   
+    storyboard.append((candidates[i][idx][0], candidates[i][idx][1]))  # add to final storyboard array
 
 
 # In[191]:
 
 # Top image for each sentence (10 images for 10 sentences)
 print(storyboard)
-
