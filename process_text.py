@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import re
+import json
 import operator
 import argparse
 from functools import reduce
@@ -15,6 +16,8 @@ from torch.autograd import Variable
 from asg.datadirectory import data_directory
 from asg.model import Net
 from asg.logger import Logger
+from asg.word2vec import Word2Vec
+from asg.data import sentence_to_tensor
 
 
 parser = argparse.ArgumentParser(
@@ -41,7 +44,7 @@ opt = parser.parse_args(([
     '--model',
     'models/model_a532783_epoch_0000018.pth',
     '--embedding',
-    'models/model_a532783_epoch_0000018.pth',
+    'image.embeddings.json',
     '--text',
     'a.bell.rings.txt'
 ]))
@@ -57,16 +60,18 @@ Logger.log("Init")
 with open(opt.text, 'r') as f:
     raw_lines = f.read() \
                 .split('\n\n')
-
-raw_lines = list(map(lambda line: line.replace('\n', ' '), raw_texts))
+raw_lines = list(map(lambda line: line.replace('\n', ' '), raw_lines))
 
 Logger.log("Read Text")
 
 
-with open('temp.json') as f:
+with open(opt.embedding) as f:
     image_dict = json.load(f)
 
 Logger.log("Read Image Embeddings")
+
+word2vec = Word2Vec()
+Logger.log("Read Word2Vec")
 
 # parse corpus into sentences
 
@@ -104,12 +109,52 @@ def split_into_sentences(text):
     sentences = [s.strip(" .") for s in sentences]
     return sentences
 
+Logger.log("Sentence Creation")
+raw_sentences = list(map(split_into_sentences, raw_lines))
 
 
+Logger.log("Loading Network")
+CUDA_AVAILABLE = torch.cuda.is_available()
+
+torch.manual_seed(opt.seed)
+if CUDA_AVAILABLE:
+    torch.cuda.manual_seed(opt.seed)
+
+
+def variable(target):
+    """Convert tensor to a variable"""
+    if CUDA_AVAILABLE:
+        target = target.cuda()
+    return Variable(target)
+
+
+net = Net()
+if CUDA_AVAILABLE:
+    net = net.cuda()
+
+net.load_state_dict(torch.load(opt.model))
+net.eval()
 # split_into_sentences(raw_text)
 
-map(split_into_sentences, raw_lines)
-list(_)
+
+def text_size_to_variables(text_sizes):
+    return [variable(torch.LongTensor([text_size])) for text_size in text_sizes]
+
+
+image_static = variable(torch.randn(1,3,224,244))
+def sentence_to_embedding(sentence):
+    tensor = sentence_to_tensor(sentence, word2vec, 2, 15)
+    if tensor[0] is False:
+        return False
+    text = variable(tensor[0].unsqueeze(0))
+    text_sizes_var = text_size_to_variables([tensor[1]])
+    _, output_text_var = net(image_static, text, text_sizes_var)
+    sentence_embedding = output_text_var.data.cpu().numpy()
+    return sentence_embedding
+
+raw_sentences
+sentence_to_embedding(raw_sentences[3][3])
+sentence_to_embedding(raw_sentences[2][0])
 
 
 
@@ -124,6 +169,9 @@ def top_images(sentence_embedding, image_dict, k=5):
         top.append((sorted_sim[i][0], image_dict[sorted_sim[i][0]]))
     return(top)
 
+results = top_images(s_emb, image_dict)
+
+[filename for filename, _ in results]
 
 # In[187]:
 
