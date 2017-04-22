@@ -271,25 +271,27 @@ render_template(results, 'prim.', 'prim')
 # Write assets to output
 files_referenced = [f for f, _, _ in sum([l for _, l in sum(results, [])], [])]
 
-asset_path = os.path.join(opt.output,'assets')
-if not os.path.isdir(asset_path):
-    os.mkdir(asset_path)
+def ensure_images(files_referenced):
+    asset_path = os.path.join(opt.output,'assets')
+    if not os.path.isdir(asset_path):
+        os.mkdir(asset_path)
 
-source_directory = os.path.join(data_directory, 'images_full')
+    source_directory = os.path.join(data_directory, 'images_full')
 
-for idx, filename in enumerate(files_referenced):
-    source_path = os.path.join(source_directory, filename)
-    target_path = os.path.join(asset_path, filename)
-    primitive_path = os.path.join(asset_path, "prim.{}".format(filename))
-    if not os.path.isfile(target_path):
-        shutil.copy(source_path, asset_path)
-    if not os.path.isfile(primitive_path):
-        Logger.log("Running Primitive {:0>3}/{:0>3} {:.1f} {}".format(idx,
-                                                                      len(files_referenced),
-                                                                      100 * idx / len(files_referenced),
-                                                                      filename))
-        response_code = call(["primitive", "-n", "500", "-i", target_path, "-o", primitive_path])
+    for idx, filename in enumerate(files_referenced):
+        source_path = os.path.join(source_directory, filename)
+        target_path = os.path.join(asset_path, filename)
+        primitive_path = os.path.join(asset_path, "prim.{}".format(filename))
+        if not os.path.isfile(target_path):
+            shutil.copy(source_path, asset_path)
+        if not os.path.isfile(primitive_path):
+            Logger.log("Running Primitive {:0>3}/{:0>3} {:.1f} {}".format(idx,
+                                                                          len(files_referenced),
+                                                                          100 * idx / len(files_referenced),
+                                                                          filename))
+            response_code = call(["primitive", "-n", "500", "-i", target_path, "-o", primitive_path])
 
+ensure_images(files_referenced)
 
 # results[2][3][0] # text
 # results[2][3][1] # candidates
@@ -302,13 +304,11 @@ for idx, filename in enumerate(files_referenced):
 #      ->
 
 
-
 def paragraph_to_images(paragraph, topN=10, threshold=0.85):
     image_tuples = sum([images for _, images in paragraph], [])
     image_tuples_sorted = sorted(image_tuples, key=operator.itemgetter(1), reverse=True)[:topN]
     return [t for t in image_tuples_sorted if t[1] >= threshold]
 
-# [(f,s) for f, s, _ in paragraph_to_images(results[2], 10, 0.9)]
 
 def image_score(image_embedding, past_images, current_position, gamma=0.9):
     values = [abs(current_position - past_position) ** gamma \
@@ -316,7 +316,6 @@ def image_score(image_embedding, past_images, current_position, gamma=0.9):
                 for _, past_embedding, past_position in past_images]
     return sum(values)
 
-# def paragraph_reduce(acc, elm):
 MAX_IMAGE_HISTORY = 5
 def paragraph_reduce(acc, paragraph):
     running_images, pressure, position = acc
@@ -339,9 +338,6 @@ def paragraph_reduce(acc, paragraph):
     # TODO: Handle pressure
     return new_images, pressure, position + 1
 
-reduce((lambda x, y: x), [1, 2, 3, 4], 90)
-
-results2 = list(reduce(paragraph_reduce, results, ([], 0, 0)))
 
 def choose_images(top_images_results):
     results = reduce(paragraph_reduce, top_images_results, ([], 0, 0))
@@ -356,9 +352,65 @@ len(results2[0])
 len(raw_lines)
 
 text_and_images = list(zip(raw_lines, result_filenames))
+ensure_images([f for f in result_filenames if f is not False])
 
 
 
+
+html_template_final = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Story Output</title>
+    <link href="https://fonts.googleapis.com/css?family=Libre+Baskerville" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.2/build/pure-min.css" integrity="sha384-UQiGfs9ICog+LwheBSRCt1o5cbyKIHbwjWscjemyBMT9YCUMZffs6UqUTd0hObXD" crossorigin="anonymous">
+    <style type="text/css">
+    .canidate {
+      border-radius: 0.1em;
+      margin-left: 0.2em;
+      margin-right: 0.2em;
+      max-width: 20em;
+      max-height: 20em;
+    }
+    .text {
+        font-family: 'Libre Baskerville', serif;
+    }
+    .shadow {
+        -moz-box-shadow:    0.3em 0.3em 0.5em 0.6em #ccc;
+        -webkit-box-shadow: 0.3em 0.3em 0.5em 0.6em #ccc;
+        box-shadow:         0.3em 0.3em 0.5em 0.6em #ccc;
+    }
+    </style>
+</head>
+<body>
+    <div id="all">
+    {% for paragraph in paragraphs %}
+        <div class="paragraph">
+            <p class="text">
+            {{ paragraph[0] }}
+            </p>
+            {% if paragraph[1] %}
+            <img class="canidate shadow" style="float:{% if loop.index is divisibleby(2) %}left{% else %}right{% endif %}"
+                src="assets/{{ prefix }}{{ paragraph[1] }}" alt="{{ paragraph[1] }}" />
+            {% endif %}
+        </div>
+    {% endfor %}
+    </div>
+</body>
+</html>
+"""
+
+
+template_final = Template(html_template_final)
+
+def render_template_final(paragraphs, prefix, filename):
+    render = template_final.render(paragraphs=paragraphs, prefix=prefix)
+
+    with open(os.path.join(opt.output, "{}.html".format(filename)), "w") as html_file:
+        html_file.write(render)
+
+render_template_final(text_and_images, '', 'index')
+render_template_final(text_and_images, 'prim.', 'art')
 
 
 
