@@ -311,40 +311,80 @@ def paragraph_to_images(paragraph, topN=10, threshold=0.85):
 
 
 def image_score(image_embedding, past_images, current_position, gamma=0.9):
-    values = [abs(current_position - past_position) ** gamma \
+    values = [gamma ** (abs(current_position - past_position) / 250) \
                 * cosine_distance(image_embedding, past_embedding)
                 for _, past_embedding, past_position in past_images]
-    return sum(values)
+    return sum(values) / len(past_images) if len(past_images) > 0 else 1
 
 MAX_IMAGE_HISTORY = 5
-def paragraph_reduce(acc, paragraph):
+def paragraph_reduce(acc, paragraph_and_length, score_threshold):
     running_images, pressure, position = acc
+    paragraph, length = paragraph_and_length
     candidates = paragraph_to_images(paragraph)
     if len(candidates) < 1:
-        return running_images + [(False, False, False)], pressure, position + 1
+        return running_images + [(False, False, False)], pressure, position + length
 
     past_images = [img for img in running_images if img[0] is not False][-MAX_IMAGE_HISTORY:]
-    candidates_scored = [(filename, image_score(embedding, \
+    candidates_scored = [(filename, score * image_score(embedding, \
                             past_images, position), embedding) for \
-                            filename, _, embedding in candidates]
+                            filename, score, embedding in candidates]
     filename_top, score_top, embedding_top = sorted(candidates_scored, \
                             key=operator.itemgetter(1), \
                             reverse=True)[0]
     # TODO: Choose to skip
 
+    if len(past_images) > 1:
+        threshold = score_threshold(position - past_images[-1][2])
+        print("past_images", past_images[-1][2], type(past_images[-1][2]))
+        print("position", position, type(position))
+        print("score_top", score_top, type(score_top))
+        print("threshold", threshold, type(threshold))
+    # threshold = score_threshold(position - running_images[-1][2]) if len(running_images) > 1 else 0
+        print("{:.4f} vs {:.4f}".format(float(score_top), float(threshold)))
+        if score_top > threshold:
+            print("PICKED")
+        else:
+            print("IGNORED")
+    else:
+        print("IGNORED FORCED")
+
+    # print(score_top)
+    # if score_top < 0.8 and len(running_images) > 3:
+    #     return running_images + [(False, False, False)], pressure, position + 1
+
     new_image = filename_top, embedding_top, position
     new_images = running_images + [new_image]
 
     # TODO: Handle pressure
-    return new_images, pressure, position + 1
+    return new_images, pressure, position + length
 
 
-def choose_images(top_images_results):
-    results = reduce(paragraph_reduce, top_images_results, ([], 0, 0))
+def choose_images(top_images_results, raw_lines, distance=500):
+    lengths = [len(l) for l in raw_lines]
+    top_images_results_flatten = sum(top_images_results, [])
+    image_candidates = sum([lines for _, lines in top_images_results_flatten], [])
+    image_scores = [score for _, score, _ in image_candidates]
+    score_max = max(image_scores)
+    score_average = sum(image_scores) / len(image_scores)
+    score_threshold = lambda distance: -((score_max - score_average) / distance) + score_max
+
+    results = reduce(lambda acc, elm: paragraph_reduce(acc, elm, score_threshold), \
+        list(zip(top_images_results, lengths)), ([], 0, 0))
     return [f for f, _, _ in results[0]]
 
-result_filenames = choose_images(results)
+result_filenames = choose_images(results, raw_lines)
 
+yy = sum(results, [])
+tt = sum([lines for _, lines in yy], [])
+ss = [score for _, score, _ in tt]
+ss[0]
+max(ss)
+min(ss)
+sum(ss) / len(ss)
+
+hh = lambda x: x ** 2
+
+hh(3)
 
 def float_left_elm(acc, elm):
     return acc + ([acc[-1]] if elm is False else [not acc[-1]])
