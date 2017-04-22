@@ -161,11 +161,6 @@ def sentence_to_embedding(sentence):
     sentence_embedding = output_text_var.data.cpu().numpy()
     return sentence_embedding
 
-raw_sentences
-sentence_to_embedding(raw_sentences[3][3])
-sentence_to_embedding(raw_sentences[2][0])
-
-
 
 # get closest k images for each sentence
 def top_images(sentence_embedding, image_dict, k=5):
@@ -175,34 +170,27 @@ def top_images(sentence_embedding, image_dict, k=5):
     sorted_sim = sorted(similarities.items(), key=operator.itemgetter(1), reverse=True)
     top = []
     for i in range(k):
-        top.append((sorted_sim[i][0], image_dict[sorted_sim[i][0]], sorted_sim[i][1]))
+        top.append((sorted_sim[i][0], sorted_sim[i][1], image_dict[sorted_sim[i][0]]))
     return(top)
 
-# results = top_images(s_emb, image_dict)
-
-# [(filename, score) for filename, _, score in results]
 
 def top_images_simple(sentence_embedding, image_dict, k=5):
     return [(filename, score) for filename, _, score in top_images(sentence_embedding, image_dict, k)]
-
-# results = list(map(lambda sentences: sentences, raw_sentences))
-
-# list(filter(lambda x: x is False, [1,2,3,False]))
 
 
 def sentences_top_images(sentences, image_dict, k=5):
     embeddings = map(sentence_to_embedding, sentences)
     embeddings_and_sentences = zip(embeddings, sentences)
-    # embeddings = filter(lambda e, s: e is not False, embeddings_and_sentences)
-    canidates = [(s, top_images_simple(e, image_dict)) if e is not False else (s, []) for e, s in embeddings_and_sentences]
+    canidates = [(s, top_images(e, image_dict, k)) if e is not False else (s, []) for e, s in embeddings_and_sentences]
     return canidates
 
 results = list(map(lambda sentences: sentences_top_images(sentences, image_dict), raw_sentences))
 
 
-# results[2]
+len(results)
 
-# results = list(map(lambda sentences: list(map(lambda s: top_images_simple(s, image_dict), sentences)), raw_sentences))
+len(results[2])
+len(results[2][3])
 
 # List<List<Tuple<Sentence,List<Tuple<filename, score>>>>>
 # Results List<Paragraphs>
@@ -216,7 +204,7 @@ html_template = """
 <html lang="en">
 <head>
     <title>Story Output</title>
-    <link href="https://fonts.googleapis.com/css?family=Asar|Cormorant+Garamond|Libre+Baskerville" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Libre+Baskerville" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.2/build/pure-min.css" integrity="sha384-UQiGfs9ICog+LwheBSRCt1o5cbyKIHbwjWscjemyBMT9YCUMZffs6UqUTd0hObXD" crossorigin="anonymous">
     <style type="text/css">
     .canidate {
@@ -227,12 +215,17 @@ html_template = """
       max-height: 100%;
     }
     .text {
-        font-family: 'Asar', serif;
         font-family: 'Libre Baskerville', serif;
-        font-family: 'Cormorant Garamond', serif;
     }
     .line:nth-child(even) {
         background-color: rgba(116, 123, 131, 0.13);
+    }
+    .paragraph:nth-child(even) {
+        background-color: rgba(0, 191, 255, 0.07);
+    }
+    .score {
+        text-align: center;
+        font-family: monospace;
     }
     </style>
 </head>
@@ -265,7 +258,7 @@ html_template = """
 
 template = Template(html_template)
 render = template.render(paragraphs=results)
-# template.render(name='John Doe',navigation=[1,2,5])
+
 
 with open(os.path.join(opt.output, "demo.html"), "w") as html_file:
     html_file.write(render)
