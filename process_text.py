@@ -162,12 +162,14 @@ def sentence_to_embedding(sentence):
     sentence_embedding = output_text_var.data.cpu().numpy()
     return sentence_embedding
 
+def cosine_distance(embedding_01, embedding_02):
+    return 1 - spatial.distance.cosine(embedding_01, embedding_02)
 
 # get closest k images for each sentence
 def top_images(sentence_embedding, image_dict, k=5):
     similarities = {}
     for key, value in image_dict.items():
-        similarities[key] = 1 - spatial.distance.cosine(sentence_embedding, value)
+        similarities[key] = cosine_distance(sentence_embedding, value)
     sorted_sim = sorted(similarities.items(), key=operator.itemgetter(1), reverse=True)
     top = []
     for i in range(k):
@@ -182,11 +184,13 @@ def top_images_simple(sentence_embedding, image_dict, k=5):
 def sentences_top_images(sentences, image_dict, k=5):
     embeddings = map(sentence_to_embedding, sentences)
     embeddings_and_sentences = zip(embeddings, sentences)
-    canidates = [(s, top_images(e, image_dict, k)) if e is not False else (s, []) for e, s in embeddings_and_sentences]
-    return canidates
+    candidates = [(s, top_images(e, image_dict, k)) if e is not False else (s, []) for e, s in embeddings_and_sentences]
+    return candidates
 
-results = list(map(lambda sentences: sentences_top_images(sentences, image_dict), raw_sentences))
+def top_images_results(paragraphs_sentences):
+    return list(map(lambda sentences: sentences_top_images(sentences, image_dict), paragraphs_sentences))
 
+results = top_images_results(raw_sentences)
 
 # List<List<Tuple<Sentence,List<Tuple<filename, score>>>>>
 # Results List<Paragraphs>
@@ -232,7 +236,7 @@ html_template = """
             {% for line in paragraph %}
             <div class="line">
                 <p class="text">
-                    {{ line[0] }}
+                    {{loop.index0}} {{ line[0] }}
                 </p>
                 <div class="pure-g">
                     {% for canidate in line[1] %}
@@ -287,10 +291,92 @@ for idx, filename in enumerate(files_referenced):
         response_code = call(["primitive", "-n", "500", "-i", target_path, "-o", primitive_path])
 
 
-Logger.log("Running Primitive {: >3}/{: >3} {:.1f}% {}".format(3, 9, 100 * 3 / 9, filename))
+# results[2][3][0] # text
+# results[2][3][1] # candidates
+#
 
 
-# In[187]:
+# results
+#  -> Paragraph[]
+#    -> Line[]
+#      ->
+
+
+
+def paragraph_to_images(paragraph, topN=10, threshold=0.85):
+    image_tuples = sum([images for _, images in paragraph], [])
+    image_tuples_sorted = sorted(image_tuples, key=operator.itemgetter(1), reverse=True)[:topN]
+    return [t for t in image_tuples_sorted if t[1] >= threshold]
+
+# [(f,s) for f, s, _ in paragraph_to_images(results[2], 10, 0.9)]
+
+def image_score(image_embedding, past_images, current_position, gamma=0.9):
+    values = [abs(current_position - past_position) ** gamma \
+                * cosine_distance(image_embedding, past_embedding)
+                for _, past_embedding, past_position in past_images]
+    return sum(values)
+
+# def paragraph_reduce(acc, elm):
+MAX_IMAGE_HISTORY = 5
+def paragraph_reduce(acc, paragraph):
+    running_images, pressure, position = acc
+    candidates = paragraph_to_images(paragraph)
+    if len(candidates) < 1:
+        return running_images + [(False, False, False)], pressure, position + 1
+
+    past_images = [img for img in running_images if img[0] is not False][-MAX_IMAGE_HISTORY:]
+    candidates_scored = [(filename, image_score(embedding, \
+                            past_images, position), embedding) for \
+                            filename, _, embedding in candidates]
+    filename_top, score_top, embedding_top = sorted(candidates_scored, \
+                            key=operator.itemgetter(1), \
+                            reverse=True)[0]
+    # TODO: Choose to skip
+
+    new_image = filename_top, embedding_top, position
+    new_images = running_images + [new_image]
+
+    # TODO: Handle pressure
+    return new_images, pressure, position + 1
+
+reduce((lambda x, y: x), [1, 2, 3, 4], 90)
+
+results2 = list(reduce(paragraph_reduce, results, ([], 0, 0)))
+
+def choose_images(top_images_results):
+    results = reduce(paragraph_reduce, top_images_results, ([], 0, 0))
+    return [f for f, _, _ in results[0]]
+
+result_filenames = choose_images(results)
+
+
+results2[2]
+
+len(results2[0])
+len(raw_lines)
+
+text_and_images = list(zip(raw_lines, result_filenames))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[f for f, _, _ in results2[0]]
+
+abs(-9)
+
+list(range(10))[-5:]
+
+2 ** 5
 
 
 # k nearest images
