@@ -346,15 +346,12 @@ def choose_images(top_images_results):
 result_filenames = choose_images(results)
 
 
-results2[2]
+def float_left_elm(acc, elm):
+    return acc + ([acc[-1]] if elm is False else [not acc[-1]])
+float_left = reduce(float_left_elm, result_filenames, [False])[1:]
 
-len(results2[0])
-len(raw_lines)
-
-text_and_images = list(zip(raw_lines, result_filenames))
+text_and_images = list(zip(raw_lines, result_filenames, float_left))
 ensure_images([f for f in result_filenames if f is not False])
-
-
 
 
 html_template_final = """
@@ -376,9 +373,9 @@ html_template_final = """
         font-family: 'Libre Baskerville', serif;
     }
     .shadow {
-        -moz-box-shadow:    0.3em 0.3em 0.5em 0.6em #ccc;
-        -webkit-box-shadow: 0.3em 0.3em 0.5em 0.6em #ccc;
-        box-shadow:         0.3em 0.3em 0.5em 0.6em #ccc;
+        -moz-box-shadow:    0.1em 0.1em 0.3em 0.4em #ccc;
+        -webkit-box-shadow: 0.1em 0.1em 0.3em 0.4em #ccc;
+        box-shadow:         0.1em 0.1em 0.3em 0.4em #ccc;
     }
     </style>
 </head>
@@ -390,7 +387,7 @@ html_template_final = """
             {{ paragraph[0] }}
             </p>
             {% if paragraph[1] %}
-            <img class="canidate shadow" style="float:{% if loop.index is divisibleby(2) %}left{% else %}right{% endif %}"
+            <img class="canidate shadow" style="float:{% if paragraph[2] %}left{% else %}right{% endif %}"
                 src="assets/{{ prefix }}{{ paragraph[1] }}" alt="{{ paragraph[1] }}" />
             {% endif %}
         </div>
@@ -411,63 +408,3 @@ def render_template_final(paragraphs, prefix, filename):
 
 render_template_final(text_and_images, '', 'index')
 render_template_final(text_and_images, 'prim.', 'art')
-
-
-
-
-
-
-
-
-
-
-
-[f for f, _, _ in results2[0]]
-
-abs(-9)
-
-list(range(10))[-5:]
-
-2 ** 5
-
-
-# k nearest images
-k = 5
-
-
-# In[194]:
-
-# k image names and 300d embedding arrays for each sentence (10 sentences in this example)
-image_pics = map(lambda x: top_images(x, image_dict, k), sentence_embeddings)
-
-
-# In[195]:
-
-# all storyboard candidates (k=5 for each sentence)
-candidates = list(image_pics)
-
-
-# In[190]:
-
-# contains final storyboard images
-storyboard = []
-
-for i in range(len(candidates)):
-
-    if i == 0:
-        storyboard.append((candidates[0][0][0], candidates[0][0][1])) # closest image to first sentence
-        continue
-
-    temp = []
-
-    for j in range(0,k):
-        temp.append(1 - spatial.distance.cosine(candidates[i][j][1], storyboard[i-1][1]))
-
-    idx = temp.index(max(temp)) # closest image to top image for previous sentence
-    storyboard.append((candidates[i][idx][0], candidates[i][idx][1]))  # add to final storyboard array
-
-
-# In[191]:
-
-# Top image for each sentence (10 images for 10 sentences)
-print(storyboard)
