@@ -6,8 +6,9 @@ import json
 import operator
 import argparse
 import shutil
-from functools import reduce
+from subprocess import call
 import multiprocessing
+from functools import reduce
 
 import numpy as np
 from jinja2 import Template
@@ -187,11 +188,6 @@ def sentences_top_images(sentences, image_dict, k=5):
 results = list(map(lambda sentences: sentences_top_images(sentences, image_dict), raw_sentences))
 
 
-len(results)
-
-len(results[2])
-len(results[2][3])
-
 # List<List<Tuple<Sentence,List<Tuple<filename, score>>>>>
 # Results List<Paragraphs>
 # Paragraph List<Line>
@@ -242,7 +238,7 @@ html_template = """
                     {% for canidate in line[1] %}
                     <div class="pure-u-1-5">
                         <p class="score">{{ canidate[1]|round(2) }}</p>
-                        <img class="canidate" src="assets/{{ canidate[0] }}" alt="{{ canidate[0] }}" />
+                        <img class="canidate" src="assets/{{ prefix }}{{ canidate[0] }}" alt="{{ canidate[0] }}" />
                     </div>
                     {% endfor %}
                 </div>
@@ -257,26 +253,41 @@ html_template = """
 
 
 template = Template(html_template)
-render = template.render(paragraphs=results)
+
+def render_template(paragraphs, prefix, filename):
+    render = template.render(paragraphs=paragraphs, prefix=prefix)
+
+    with open(os.path.join(opt.output, "{}.html".format(filename)), "w") as html_file:
+        html_file.write(render)
+
+render_template(results, '', 'demo')
+render_template(results, 'prim.', 'prim')
 
 
-with open(os.path.join(opt.output, "demo.html"), "w") as html_file:
-    html_file.write(render)
+# Write assets to output
+files_referenced = [f for f, _, _ in sum([l for _, l in sum(results, [])], [])]
 
-
-files_referenced = [f for f, _ in sum([l for _, l in sum(results, [])], [])]
 asset_path = os.path.join(opt.output,'assets')
-
-
 if not os.path.isdir(asset_path):
     os.mkdir(asset_path)
 
 source_directory = os.path.join(data_directory, 'images_full')
 
-for filename in files_referenced:
-    shutil.copy(os.path.join(source_directory, filename), asset_path)
+for idx, filename in enumerate(files_referenced):
+    source_path = os.path.join(source_directory, filename)
+    target_path = os.path.join(asset_path, filename)
+    primitive_path = os.path.join(asset_path, "prim.{}".format(filename))
+    if not os.path.isfile(target_path):
+        shutil.copy(source_path, asset_path)
+    if not os.path.isfile(primitive_path):
+        Logger.log("Running Primitive {:0>3}/{:0>3} {:.1f} {}".format(idx,
+                                                                      len(files_referenced),
+                                                                      100 * idx / len(files_referenced),
+                                                                      filename))
+        response_code = call(["primitive", "-n", "500", "-i", target_path, "-o", primitive_path])
 
 
+Logger.log("Running Primitive {: >3}/{: >3} {:.1f}% {}".format(3, 9, 100 * 3 / 9, filename))
 
 
 # In[187]:
