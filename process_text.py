@@ -1,13 +1,16 @@
 # coding: utf-8
 
+import os
 import re
 import json
 import operator
 import argparse
+import shutil
 from functools import reduce
 import multiprocessing
 
 import numpy as np
+from jinja2 import Template
 from scipy import spatial
 import torch
 import torchvision.transforms as transforms
@@ -46,8 +49,14 @@ opt = parser.parse_args(([
     '--embedding',
     'image.embeddings.json',
     '--text',
-    'a.bell.rings.txt'
+    'a.bell.rings.txt',
+    '--output',
+    'output'
 ]))
+
+
+if not os.path.isdir(opt.output):
+    raise Exception("Output path is not a directory")
 
 ### Storyboard Selection
 #### 1. Parse text corpus into sentences
@@ -166,14 +175,119 @@ def top_images(sentence_embedding, image_dict, k=5):
     sorted_sim = sorted(similarities.items(), key=operator.itemgetter(1), reverse=True)
     top = []
     for i in range(k):
-        top.append((sorted_sim[i][0], image_dict[sorted_sim[i][0]]))
+        top.append((sorted_sim[i][0], image_dict[sorted_sim[i][0]], sorted_sim[i][1]))
     return(top)
 
-results = top_images(s_emb, image_dict)
+# results = top_images(s_emb, image_dict)
 
-[filename for filename, _ in results]
+# [(filename, score) for filename, _, score in results]
+
+def top_images_simple(sentence_embedding, image_dict, k=5):
+    return [(filename, score) for filename, _, score in top_images(sentence_embedding, image_dict, k)]
+
+# results = list(map(lambda sentences: sentences, raw_sentences))
+
+# list(filter(lambda x: x is False, [1,2,3,False]))
+
+
+def sentences_top_images(sentences, image_dict, k=5):
+    embeddings = map(sentence_to_embedding, sentences)
+    embeddings_and_sentences = zip(embeddings, sentences)
+    # embeddings = filter(lambda e, s: e is not False, embeddings_and_sentences)
+    canidates = [(s, top_images_simple(e, image_dict)) if e is not False else (s, []) for e, s in embeddings_and_sentences]
+    return canidates
+
+results = list(map(lambda sentences: sentences_top_images(sentences, image_dict), raw_sentences))
+
+
+# results[2]
+
+# results = list(map(lambda sentences: list(map(lambda s: top_images_simple(s, image_dict), sentences)), raw_sentences))
+
+# List<List<Tuple<Sentence,List<Tuple<filename, score>>>>>
+# Results List<Paragraphs>
+# Paragraph List<Line>
+# Line Tuple(Text, List<Images>)
+# Images List<Tuple(Filename, Score)>
+
+
+html_template = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Story Output</title>
+    <link href="https://fonts.googleapis.com/css?family=Asar|Cormorant+Garamond|Libre+Baskerville" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.2/build/pure-min.css" integrity="sha384-UQiGfs9ICog+LwheBSRCt1o5cbyKIHbwjWscjemyBMT9YCUMZffs6UqUTd0hObXD" crossorigin="anonymous">
+    <style type="text/css">
+    .canidate {
+      border-radius: 0.1em;
+      margin-left: 0.2em;
+      margin-right: 0.2em;
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .text {
+        font-family: 'Asar', serif;
+        font-family: 'Libre Baskerville', serif;
+        font-family: 'Cormorant Garamond', serif;
+    }
+    .line:nth-child(even) {
+        background-color: rgba(116, 123, 131, 0.13);
+    }
+    </style>
+</head>
+<body>
+    <div id="all">
+    {% for paragraph in paragraphs %}
+        <div class="paragraph">
+            {% for line in paragraph %}
+            <div class="line">
+                <p class="text">
+                    {{ line[0] }}
+                </p>
+                <div class="pure-g">
+                    {% for canidate in line[1] %}
+                    <div class="pure-u-1-5">
+                        <p class="score">{{ canidate[1]|round(2) }}</p>
+                        <img class="canidate" src="assets/{{ canidate[0] }}" alt="{{ canidate[0] }}" />
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+    </div>
+</body>
+</html>
+"""
+
+
+template = Template(html_template)
+render = template.render(paragraphs=results)
+# template.render(name='John Doe',navigation=[1,2,5])
+
+with open(os.path.join(opt.output, "demo.html"), "w") as html_file:
+    html_file.write(render)
+
+
+files_referenced = [f for f, _ in sum([l for _, l in sum(results, [])], [])]
+asset_path = os.path.join(opt.output,'assets')
+
+
+if not os.path.isdir(asset_path):
+    os.mkdir(asset_path)
+
+source_directory = os.path.join(data_directory, 'images_full')
+
+for filename in files_referenced:
+    shutil.copy(os.path.join(source_directory, filename), asset_path)
+
+
+
 
 # In[187]:
+
 
 # k nearest images
 k = 5
