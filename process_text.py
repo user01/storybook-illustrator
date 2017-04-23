@@ -43,8 +43,6 @@ parser.add_argument('-demo', action='store_true',
                     help='Render demo page')
 parser.add_argument('--seed', type=int, default=451,
                     help='Random seed. Default=451')
-parser.add_argument('--batch', type=int, default=32,
-                    help='Batch size. Default=32')
 parser.add_argument('--workers', type=int, default=multiprocessing.cpu_count(),
                     help='Number of workers for data loader. Defaults to system cores')
 
@@ -191,6 +189,7 @@ def sentences_top_images(sentences, image_dict, k=5):
 def top_images_results(paragraphs_sentences):
     return list(map(lambda sentences: sentences_top_images(sentences, image_dict), paragraphs_sentences))
 
+Logger.log("Starting Main Work")
 results = top_images_results(raw_sentences)
 
 # List<List<Tuple<Sentence,List<Tuple<filename, score>>>>>
@@ -294,7 +293,8 @@ def ensure_images(files_referenced, ensure_primitive=False):
 if opt.demo:
     ensure_images(files_referenced)
     Logger.log("Demo Written")
-
+else:
+    Logger.log("Demo Skipped")
 
 
 def paragraph_to_images(paragraph, topN=10, threshold=0.85):
@@ -352,7 +352,9 @@ def choose_images(top_images_results, raw_lines, distance=500):
         list(zip(top_images_results, lengths)), ([], 0, 0))
     return [f for f, _, _ in results[0]]
 
+
 result_filenames = choose_images(results, raw_lines)
+Logger.log("Chosen Images")
 
 
 def float_left_elm(acc, elm):
