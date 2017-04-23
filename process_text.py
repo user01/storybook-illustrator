@@ -38,6 +38,8 @@ parser.add_argument('--title', type=str,
 parser.add_argument('--output', type=str,
                     help='Path to output directory')
 
+parser.add_argument('-demo', action='store_true',
+                    help='Render demo page')
 parser.add_argument('--seed', type=int, default=451,
                     help='Random seed. Default=451')
 parser.add_argument('--batch', type=int, default=32,
@@ -262,7 +264,8 @@ def render_template(paragraphs, prefix, filename):
     with open(os.path.join(opt.output, "{}.html".format(filename)), "w") as html_file:
         html_file.write(render)
 
-render_template(results, '', 'demo')
+if opt.demo:
+    render_template(results, '', 'demo')
 
 # Write assets to output
 files_referenced = [f for f, _, _ in sum([l for _, l in sum(results, [])], [])]
@@ -287,9 +290,11 @@ def ensure_images(files_referenced, ensure_primitive=False):
                                                                           filename))
             response_code = call(["primitive", "-n", "500", "-i", target_path, "-o", primitive_path])
 
-ensure_images(files_referenced)
+if opt.demo:
+    ensure_images(files_referenced)
+    Logger.log("Demo Written")
 
-Logger.log("Demo Written")
+
 
 def paragraph_to_images(paragraph, topN=10, threshold=0.85):
     image_tuples = sum([images for _, images in paragraph], [])
