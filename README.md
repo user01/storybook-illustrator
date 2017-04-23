@@ -73,7 +73,7 @@ DATA_DIRECTORY/
 
 The deep folder structure is an artifact of how pytorch's Image Folder considers the assets.
 
-#### ImageMagick Command
+Image must be of size 224x244. An example ImageMagick command to conform the directory is:
 
 ```bash
 mogrify -path . -resize "224x224^" -gravity center -crop 224x224+0+0 *.*
