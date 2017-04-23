@@ -298,7 +298,6 @@ def image_score(image_embedding, past_images, current_position, gamma=0.9):
                 * spatial.distance.cosine(image_embedding, past_embedding)
                 for _, past_embedding, past_position in past_images]
     penalty = sum(values) / len(past_images) if len(past_images) > 0 else 0
-    print('penalty', penalty)
     return penalty
 
 MAX_IMAGE_HISTORY = 5
@@ -322,20 +321,10 @@ def paragraph_reduce(acc, paragraph_and_length, score_threshold):
 
     if len(past_images) > 0:
         threshold = score_threshold(position - past_images[-1][2])
-        print("past_images", past_images[-1][2], type(past_images[-1][2]))
-        print("position", position, type(position))
-        print("score_top", score_top, type(score_top))
-        print("threshold", threshold, type(threshold))
-    # threshold = score_threshold(position - running_images[-1][2]) if len(running_images) > 1 else 0
-        print("{:.4f} vs {:.4f}".format(float(score_top), float(threshold)))
         if score_top > threshold:
-            print("PICKED")
             return new_images, pressure, position + length
         else:
-            print("IGNORED")
             return running_images + [(False, False, False)], pressure, position + length
-    else:
-        print("IGNORED FORCED")
     return new_images, pressure, position + length
 
 
