@@ -45,19 +45,19 @@ parser.add_argument('--batch', type=int, default=32,
 parser.add_argument('--workers', type=int, default=multiprocessing.cpu_count(),
                     help='Number of workers for data loader. Defaults to system cores')
 
-# opt = parser.parse_args()
-opt = parser.parse_args(([
-    '--model',
-    'models/model_a532783_epoch_0000018.pth',
-    '--embedding',
-    'image.embeddings.json',
-    '--text',
-    'awakening.txt',
-    '--title',
-    'The Awakening',
-    '--output',
-    'output'
-]))
+opt = parser.parse_args()
+# opt = parser.parse_args(([
+#     '--model',
+#     'models/model_a532783_epoch_0000018.pth',
+#     '--embedding',
+#     'image.embeddings.json',
+#     '--text',
+#     'awakening.txt',
+#     '--title',
+#     'The Awakening',
+#     '--output',
+#     'output'
+# ]))
 
 
 if not os.path.isdir(opt.output):
