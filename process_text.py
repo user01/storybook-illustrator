@@ -33,6 +33,8 @@ parser.add_argument('--embedding', type=str,
                     help='Path to image embedding')
 parser.add_argument('--text', type=str,
                     help='Path to input text')
+parser.add_argument('--title', type=str,
+                    help='Story Title')
 parser.add_argument('--output', type=str,
                     help='Path to output directory')
 
@@ -51,6 +53,8 @@ opt = parser.parse_args(([
     'image.embeddings.json',
     '--text',
     'awakening.txt',
+    '--title',
+    'The Awakening',
     '--output',
     'output'
 ]))
@@ -417,7 +421,7 @@ def render_template_final(paragraphs, prefix, filename, title):
     with open(os.path.join(opt.output, "{}.html".format(filename)), "w") as html_file:
         html_file.write(render)
 
-render_template_final(text_and_images, '', 'clear')
-render_template_final(text_and_images, 'prim.', 'index')
+render_template_final(text_and_images, '', 'clear', opt.title)
+render_template_final(text_and_images, 'prim.', 'index', opt.title)
 
 Logger.log("Story Written")
