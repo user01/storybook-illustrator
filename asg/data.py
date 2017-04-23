@@ -35,7 +35,7 @@ def _vectors_to_tensor(vectors, tensor_size_min, tensor_size_max):
     return torch.stack(tensors)
 
 
-def _sentence_to_tensor(sentence, word2vec, tensor_size_min, tensor_size_max):
+def sentence_to_tensor(sentence, word2vec, tensor_size_min, tensor_size_max):
     text = _vectors_to_tensor(word2vec.sentence_embedding(
         sentence), tensor_size_min, tensor_size_max)
     if not torch.is_tensor(text):
@@ -121,7 +121,7 @@ class ImageLoader(data.Dataset):
                  for d in os.listdir(self._image_path)]
         texts_clean = [(d, text) for d, text in texts if text != False]
 
-        text_tensors = [(d, _sentence_to_tensor(text, word2vec, 1, max_tokens))
+        text_tensors = [(d, sentence_to_tensor(text, word2vec, 1, max_tokens))
                         for d, text in texts_clean if text != False]
         text_tensors_clean = [(d, tensor, text_size) for d, (tensor, text_size) in text_tensors if
                               torch.is_tensor(tensor)]
