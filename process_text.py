@@ -50,7 +50,7 @@ opt = parser.parse_args(([
     '--embedding',
     'image.embeddings.json',
     '--text',
-    'a.bell.rings.txt',
+    'awakening.txt',
     '--output',
     'output'
 ]))
@@ -58,12 +58,6 @@ opt = parser.parse_args(([
 
 if not os.path.isdir(opt.output):
     raise Exception("Output path is not a directory")
-
-### Storyboard Selection
-#### 1. Parse text corpus into sentences
-#### 2. Create dummy image and sentence embeddings
-#### 3. Get closest k = 5 dummy images for each dummy sentence
-#### 4. Create final storyboard by selecting image closest to previous sentence's image (first sentence's image is closest image to sentence)
 
 Logger.log("Init")
 
@@ -265,13 +259,11 @@ def render_template(paragraphs, prefix, filename):
         html_file.write(render)
 
 render_template(results, '', 'demo')
-render_template(results, 'prim.', 'prim')
-
 
 # Write assets to output
 files_referenced = [f for f, _, _ in sum([l for _, l in sum(results, [])], [])]
 
-def ensure_images(files_referenced):
+def ensure_images(files_referenced, ensure_primitive=False):
     asset_path = os.path.join(opt.output,'assets')
     if not os.path.isdir(asset_path):
         os.mkdir(asset_path)
@@ -284,7 +276,7 @@ def ensure_images(files_referenced):
         primitive_path = os.path.join(asset_path, "prim.{}".format(filename))
         if not os.path.isfile(target_path):
             shutil.copy(source_path, asset_path)
-        if not os.path.isfile(primitive_path):
+        if not os.path.isfile(primitive_path) and ensure_primitive:
             Logger.log("Running Primitive {:0>3}/{:0>3} {:.1f} {}".format(idx,
                                                                           len(files_referenced),
                                                                           100 * idx / len(files_referenced),
@@ -293,16 +285,7 @@ def ensure_images(files_referenced):
 
 ensure_images(files_referenced)
 
-# results[2][3][0] # text
-# results[2][3][1] # candidates
-#
-
-
-# results
-#  -> Paragraph[]
-#    -> Line[]
-#      ->
-
+Logger.log("Demo Written")
 
 def paragraph_to_images(paragraph, topN=10, threshold=0.85):
     image_tuples = sum([images for _, images in paragraph], [])
@@ -314,7 +297,6 @@ def image_score(image_embedding, past_images, current_position, gamma=0.9):
     values = [gamma ** (abs(current_position - past_position) / 250) \
                 * spatial.distance.cosine(image_embedding, past_embedding)
                 for _, past_embedding, past_position in past_images]
-    # print(values)
     penalty = sum(values) / len(past_images) if len(past_images) > 0 else 0
     print('penalty', penalty)
     return penalty
@@ -379,7 +361,7 @@ def float_left_elm(acc, elm):
 float_left = reduce(float_left_elm, result_filenames, [False])[1:]
 
 text_and_images = list(zip(raw_lines, result_filenames, float_left))
-ensure_images([f for f in result_filenames if f is not False])
+ensure_images([f for f in result_filenames if f is not False], True)
 
 
 html_template_final = """
@@ -387,15 +369,15 @@ html_template_final = """
 <html lang="en">
 <head>
     <title>Story Output</title>
-    <link href="https://fonts.googleapis.com/css?family=Libre+Baskerville" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Libre+Baskerville|Playfair+Display+SC" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.2/build/pure-min.css" integrity="sha384-UQiGfs9ICog+LwheBSRCt1o5cbyKIHbwjWscjemyBMT9YCUMZffs6UqUTd0hObXD" crossorigin="anonymous">
     <style type="text/css">
     .canidate {
-      border-radius: 0.1em;
-      margin-left: 0.2em;
-      margin-right: 0.2em;
-      max-width: 20em;
-      max-height: 20em;
+        border-radius: 0.1em;
+        margin: 0.8em;
+        margin-top: 0.2em;
+        max-width: 20em;
+        max-height: 20em;
     }
     .text {
         font-family: 'Libre Baskerville', serif;
@@ -405,21 +387,33 @@ html_template_final = """
         -webkit-box-shadow: 0.1em 0.1em 0.3em 0.4em #ccc;
         box-shadow:         0.1em 0.1em 0.3em 0.4em #ccc;
     }
+    .title {
+        font-family: 'Playfair Display SC', serif;
+        text-align: right;
+        margin-right: 1em;
+        border-bottom: 3px grey solid;
+        padding-right: 2em;
+    }
     </style>
 </head>
 <body>
-    <div id="all">
-    {% for paragraph in paragraphs %}
-        <div class="paragraph">
-            <p class="text">
-            {{ paragraph[0] }}
-            </p>
-            {% if paragraph[1] %}
-            <img class="canidate shadow" style="float:{% if paragraph[2] %}left{% else %}right{% endif %}"
-                src="assets/{{ prefix }}{{ paragraph[1] }}" alt="{{ paragraph[1] }}" />
-            {% endif %}
+    <div class="pure-g">
+        <div class="pure-u-1-8 pure-u-md-1-3"></div>
+        <div class="pure-u-3-4 pure-u-md-1-3">
+        <h2 class="title">{{ title }}</h2>
+        {% for paragraph in paragraphs %}
+            <div class="paragraph">
+                <p class="text">
+                {{ paragraph[0] }}
+                </p>
+                {% if paragraph[1] %}
+                <img class="canidate shadow" style="float:{% if paragraph[2] %}left{% else %}right{% endif %}"
+                    src="assets/{{ prefix }}{{ paragraph[1] }}" alt="{{ paragraph[1] }}" />
+                {% endif %}
+            </div>
+        {% endfor %}
         </div>
-    {% endfor %}
+        <div class="pure-u-1-8 pure-u-md-1-3"></div>
     </div>
 </body>
 </html>
@@ -428,11 +422,13 @@ html_template_final = """
 
 template_final = Template(html_template_final)
 
-def render_template_final(paragraphs, prefix, filename):
-    render = template_final.render(paragraphs=paragraphs, prefix=prefix)
+def render_template_final(paragraphs, prefix, filename, title):
+    render = template_final.render(paragraphs=paragraphs, prefix=prefix, title=title)
 
     with open(os.path.join(opt.output, "{}.html".format(filename)), "w") as html_file:
         html_file.write(render)
 
-render_template_final(text_and_images, '', 'index')
-render_template_final(text_and_images, 'prim.', 'art')
+render_template_final(text_and_images, '', 'clear')
+render_template_final(text_and_images, 'prim.', 'index')
+
+Logger.log("Story Written")
