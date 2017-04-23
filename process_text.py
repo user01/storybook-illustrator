@@ -2,6 +2,7 @@
 
 import os
 import re
+import string
 import json
 import operator
 import argparse
@@ -399,6 +400,7 @@ html_template_final = """
         <div class="pure-u-1-8 pure-u-md-1-3"></div>
         <div class="pure-u-3-4 pure-u-md-1-3">
         <h2 class="title">{{ title }}</h2>
+        <p><a href="/">Back to Home</a></p>
         {% for paragraph in paragraphs %}
             <div class="paragraph">
                 <p class="text">
@@ -426,7 +428,10 @@ def render_template_final(paragraphs, prefix, filename, title):
     with open(os.path.join(opt.output, "{}.html".format(filename)), "w") as html_file:
         html_file.write(render)
 
-render_template_final(text_and_images, '', 'clear', opt.title)
-render_template_final(text_and_images, 'prim.', 'index', opt.title)
+alpha_pattern = re.compile('[\W_]+')
+file_suffix = alpha_pattern.sub('', opt.title).lower()
+
+render_template_final(text_and_images, '', 'clear.{}'.format(file_suffix), opt.title)
+render_template_final(text_and_images, 'prim.', 'index.{}'.format(file_suffix), opt.title)
 
 Logger.log("Story Written")
