@@ -2,6 +2,8 @@
 
 This project explores visual storytelling by annotating a narrative with images. Ultimately, the images form a cohesive flow of events described in the text. We use Microsoft Research’s [Visual Storytelling Dataset (VIST)](http://visionandlanguage.net/VIST/) to build a two part network relating images and text descriptions. Once trained, this architecture places appropriate images for unseen text narratives.
 
+See more examples on the [site](https://user01.github.io/storybook-illustrator/).
+
 ![Example annotation](docs/assets/sample.results.png "Example annotation")
 
 ## Build Notes
