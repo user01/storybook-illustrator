@@ -68,6 +68,8 @@ Python dependencies are in the pip3 file `requirements.txt`. Note that nltk requ
 
 The [Visual Storytelling Dataset (VIST)](http://visionandlanguage.net/VIST/) needs to be downloaded to the local disk and extracted. The location folder must be stored in a plain text file in the project root called `data.directory.txt`.
 
+The final `process_text.py` script also requires the primitive binary to be available in the path. The source is MIT licensed and available on [github](https://github.com/fogleman/primitive). This provides the final post processing of chosen images.
+
 Word embeddings can be downloaded from Google [here](https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit?usp=sharing) and must be extracted in the root of the **DATA_DIRECTORY**.
 
 The **DATA_DIRECTORY** needs to have the following structure:
