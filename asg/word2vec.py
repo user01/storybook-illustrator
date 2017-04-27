@@ -5,7 +5,6 @@ import os
 import re
 
 import numpy as np
-# from gensim.models import Word2Vec as word2vec
 from gensim import models
 from nltk.tokenize import word_tokenize
 from nltk.tokenize import RegexpTokenizer
