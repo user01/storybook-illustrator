@@ -10,6 +10,7 @@ See more examples on the [site](https://user01.github.io/storybook-illustrator/)
 
 Multiple models were constructed to find the best architecture to relate the text to the images. Models are annotated with the short hash from the relevant git commit. The pair of networks use a cosine loss.
 
+![Model Diagram](docs/assets/model.png "Model Diagram")
 ![Multiple Losses](docs/assets/loss_best.png "Multiple Losses")
 ![Best Loss](docs/assets/loss_a532783.png "Best Loss")
 
