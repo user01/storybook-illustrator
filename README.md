@@ -4,6 +4,8 @@ This project explores visual storytelling by annotating a narrative with images.
 
 See more examples on the [site](https://user01.github.io/storybook-illustrator/).
 
+Public domain works from [Project Gutenberg](http://www.gutenberg.org/) include: _The Jungle Book_, _A Tale of Two Cities_, _Peter Pan_, _Pride and Prejudice_, _Alice and Wonderland_, _A Scandal in Bohemia_, _Cinderella_, _Golden Goose_, _The Awakening_, _The Little Match Girl_, and _The Princess and the Pea_.
+
 ![Example annotation](docs/assets/sample.results.png "Example annotation")
 
 ## Build Notes
@@ -42,7 +44,7 @@ c.FileContentsManager.post_save_hook = post_save
 
 ### Dependencies
 
-Python dependencies are in the pip3 file `requirements.txt`. Note that nltk requires data files, which are loaded by `python -m nltk.downloader all`. Pytorch will automatically retrieve resnet preloadings on the first run.
+Python dependencies are in the pip3 file `requirements.txt`. Note that nltk requires data files, which are loaded by `python -m nltk.downloader all`. Pytorch will automatically retrieve Resnet preloadings on the first run.
 
 ### Data
 
