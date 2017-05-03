@@ -411,7 +411,7 @@ html_template_final = """
         <div class="pure-u-1-8 pure-u-md-1-3"></div>
         <div class="pure-u-3-4 pure-u-md-1-3">
         <h2 class="title">{{ title }}</h2>
-        <p><a href="/index.html">Back to Home</a></p>
+        <p><a href="index.html">Back to Home</a></p>
         {% for paragraph in paragraphs %}
             <div class="paragraph">
                 <p class="text">
