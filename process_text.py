@@ -2,6 +2,7 @@
 
 import os
 import re
+import random
 import string
 import json
 import operator
@@ -43,6 +44,7 @@ parser.add_argument('-demo', action='store_true',
                     help='Render demo page')
 parser.add_argument('--seed', type=int, default=451,
                     help='Random seed. Default=451')
+parser.add_argument('--shuffle', action='store_true')
 parser.add_argument('--workers', type=int, default=multiprocessing.cpu_count(),
                     help='Number of workers for data loader. Defaults to system cores')
 
@@ -76,6 +78,13 @@ Logger.log("Read Text")
 
 with open(opt.embedding) as f:
     image_dict = json.load(f)
+
+if opt.shuffle:
+    keys = image_dict.keys()
+    values = list(image_dict.values())
+    random.seed(opt.seed)
+    random.shuffle(values)
+    image_dict = dict(zip(keys, values))
 
 Logger.log("Read Image Embeddings")
 
